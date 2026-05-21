@@ -155,6 +155,9 @@
     let dataDay1 = [];     // [stage_id, [[group_id, sh, sm, eh, em], ...]]
     let dataDay2 = [];
     let stages = [];       // UI装飾用の加工済み配列
+
+    let scheduleDay1 = [];
+    let scheduleDay2 = [];
     
     let currentDay = 1, currentSchedules = [], selectedActMap = new Map();
     let activeTab = "all", visibleStageIds = new Set();
@@ -190,7 +193,7 @@
     window.onload = function() {
       initData(); // int配列群をデコードしてメモリに展開
       
-      currentSchedules = getFlatActs(dataDay1); 
+      currentSchedules = getFlatActs(scheduleDay1); 
       visibleStageIds = new Set(stages.filter(s => s.category === "live").map(s => s.id));
       
       try {
@@ -269,9 +272,9 @@
       clearTimeout(alertTimeout);
       alertTimeout = setTimeout(() => dismissAlert(), 2500);
     }
-
-    function dismissAlert() {
-      $("custom-alert").classList.add("translate-y-24", "opacity-0");
+    function dismissAlert() { 
+      $('custom-alert').classList.remove("translate-y-0", "opacity-100");
+      $('custom-alert').classList.add('translate-y-24', 'opacity-0'); 
     }
 
     // --- 5. フィルター操作 ---
@@ -315,7 +318,7 @@
 
     // --- 6. 出番単位の選択 ＆ モーダル ---
     function toggleActSelect(actId) {
-      const allActs = getFlatActs(dataDay1).concat(getFlatActs(dataDay2));
+      const allActs = getFlatActs(scheduleDay1).concat(getFlatActs(scheduleDay2));
       const act = allActs.find(a => a.id === actId);
       if (!act) return;
       
@@ -352,7 +355,7 @@
       const listContainer = document.getElementById("modal-schedule-list");
       listContainer.innerHTML = "";
       
-      const allActs = getFlatActs(dataDay1).concat(getFlatActs(dataDay2)).filter(a => a.groupId === groupId).sort((a, b) => a.startMin - b.startMin);
+      const allActs = getFlatActs(scheduleDay1).concat(getFlatActs(scheduleDay2)).filter(a => a.groupId === groupId).sort((a, b) => a.startMin - b.startMin);
 
       allActs.forEach(act => {
         const stage = stages.find(s => s.id === act.stageId);
@@ -389,7 +392,7 @@
     // --- 7. 描画共通関数・アルゴリズム ---
     function getFlatActs(dataArray) {
       const flat = [];
-      const prefix = dataArray === dataDay1 ? 'd1' : 'd2';
+      const prefix = dataArray === scheduleDay1 ? 'd1' : 'd2';
       dataArray.forEach(stageData => {
         const stageId = stageData[0];
         stageData[1].forEach(act => {
@@ -630,7 +633,7 @@
       groups["その他"] = [];
 
       filteredMasters.forEach(m => { 
-        const key = getYomiGroup(m[1], m[2]); 
+        const key = (m[1], m[2]); 
         if(groups[key]) groups[key].push(m); else groups["その他"].push(m); 
       });
 
