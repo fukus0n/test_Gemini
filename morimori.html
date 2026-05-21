@@ -587,7 +587,7 @@
       groups["その他"] = [];
 
       filteredMasters.forEach(m => { 
-        const key = getYomiGroup(m[1], m[2]); 
+        const key = (m[1], m[2]); 
         if(groups[key]) groups[key].push(m); else groups["その他"].push(m); 
       });
 
