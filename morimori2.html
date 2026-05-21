@@ -4,122 +4,282 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>GG FES タイムテーブル</title>
-  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* タイムテーブル用のカスタムスタイル */
-    .time-axis {
-      position: sticky;
-      left: 0;
-      background: white;
-      z-index: 10;
-      width: 50px;
-      border-right: 1px solid #e2e8f0;
+    /* CSS変数で基本カラーなどを定義 */
+    :root {
+      --bg-color: #f5f7fa;
+      --text-color: #333;
+      --header-bg: #fff;
+      --stage-mori: #c8e6c9;  /* 緑系 */
+      --stage-yoshi: #bbdefb; /* 青系 */
+      --stage-vivid: #f8bbd0; /* ピンク系 */
     }
-    .stage-column {
-      position: relative;
-      min-width: 130px;
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden; /* 全体のスクロールは止める */
+    }
+
+    /* --- ヘッダー --- */
+    header {
+      background-color: var(--header-bg);
+      padding: 10px;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.2rem;
+    }
+    .day-switch button {
+      padding: 5px 15px;
+      border: 1px solid #ccc;
+      background: #fff;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .day-switch button.active {
+      background: #333;
+      color: #fff;
+      border-color: #333;
+    }
+
+    /* --- タブ切り替え --- */
+    .tab-nav {
+      display: flex;
+      background: #fff;
+      border-bottom: 1px solid #ccc;
+    }
+    .tab-nav button {
       flex: 1;
-      border-right: 1px dashed #e2e8f0;
+      padding: 10px;
+      border: none;
+      background: none;
+      font-size: 1rem;
+      cursor: pointer;
+      color: #888;
+    }
+    .tab-nav button.active {
+      color: #333;
+      font-weight: bold;
+      border-bottom: 3px solid #333;
+    }
+
+    /* --- メインコンテンツ領域 --- */
+    main {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    .view-area {
+      display: none;
+      height: 100%;
+      width: 100%;
+    }
+    .view-area.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* --- タイムテーブル表示部分 --- */
+    .timetable-container {
+      display: flex;
+      flex: 1;
+      overflow: hidden; /* コンテナ自体はスクロールしない */
+      position: relative;
+    }
+    .time-axis {
+      width: 45px;
+      background: #fff;
+      border-right: 1px solid #ccc;
+      position: relative;
+      z-index: 10;
+      /* overflow-y: hidden; スクロール同期させる */
+    }
+    .stages-wrapper {
+      flex: 1;
+      overflow-x: auto; /* ステージが多い場合は横スクロール */
+      overflow-y: auto; /* 縦スクロール */
+      position: relative;
+      display: flex;
+    }
+    .stage-col {
+      min-width: 120px; /* 各ステージの幅 */
+      flex: 1;
+      border-right: 1px dashed #ccc;
+      position: relative;
     }
     .stage-header {
       position: sticky;
       top: 0;
-      z-index: 20;
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(4px);
+      background: rgba(255,255,255,0.9);
       text-align: center;
-      padding: 0.5rem;
+      padding: 5px 0;
       font-weight: bold;
-      border-bottom: 2px solid #e2e8f0;
+      border-bottom: 1px solid #ccc;
+      z-index: 5;
     }
-    .act-card {
+    /* アクト（枠）のスタイル */
+    .act-box {
       position: absolute;
-      left: 4px;
-      right: 4px;
-      border-radius: 6px;
-      padding: 4px;
+      left: 2px;
+      right: 2px;
+      border-radius: 4px;
+      padding: 2px;
       font-size: 0.75rem;
-      line-height: 1.2;
-      overflow: hidden;
+      box-sizing: border-box;
       cursor: pointer;
+      overflow: hidden;
       box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-      transition: transform 0.1s, box-shadow 0.1s;
+      transition: opacity 0.2s;
     }
-    .act-card:active {
-      transform: scale(0.95);
+    .act-box.unselected {
+      opacity: 0.5; /* マイテーブル機能用：選択されていないものを薄くする等 */
     }
-    .act-selected {
-      box-shadow: 0 0 0 2px #ef4444; /* マイテーブル選択時は赤枠 */
+    .act-box.selected {
+      border: 2px solid #ff0000;
+      font-weight: bold;
+      opacity: 1.0;
     }
-    /* スクロールバー非表示（モバイル向けにスッキリさせる） */
-    ::-webkit-scrollbar {
+    
+    .time-label {
+      position: absolute;
+      width: 100%;
+      text-align: right;
+      padding-right: 5px;
+      font-size: 0.7rem;
+      color: #666;
+      box-sizing: border-box;
+      /* margin-top: -0.5rem; 文字の縦ズレ調整 */
+    }
+
+    /* --- 出演者一覧表示部分 --- */
+    .artist-list-container {
+      overflow-y: auto;
+      padding: 10px;
+      padding-bottom: 80px; /* モーダル用余白 */
+    }
+    .yomi-group-title {
+      background: #e0e0e0;
+      padding: 5px 10px;
+      font-weight: bold;
+      margin-top: 10px;
+      border-radius: 4px;
+    }
+    .artist-list-item {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    .artist-list-item:active {
+      background: #f0f0f0;
+    }
+
+    /* --- モーダル (詳細表示) --- */
+    #modal-overlay {
       display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
     }
-    .hidden-tab {
-      display: none !important;
+    #act-modal {
+      display: none;
+      position: fixed;
+      bottom: 0; left: 0; width: 100%;
+      background: #fff;
+      border-radius: 15px 15px 0 0;
+      padding: 20px;
+      box-sizing: border-box;
+      z-index: 201;
+      transform: translateY(100%);
+      transition: transform 0.3s ease-out;
     }
+    #act-modal.show {
+      transform: translateY(0);
+    }
+    .modal-close {
+      position: absolute;
+      top: 10px; right: 15px;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #888;
+    }
+    .btn-my-table {
+      width: 100%;
+      padding: 15px;
+      margin-top: 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-add { background: #333; color: #fff; }
+    .btn-remove { background: #e0e0e0; color: #333; }
+
   </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans flex flex-col h-screen">
+<body>
 
   <!-- ヘッダー -->
-  <header class="bg-white shadow-sm p-3 z-30 relative">
-    <div class="flex justify-between items-center max-w-4xl mx-auto">
-      <h1 class="text-lg font-bold text-slate-800">GG FES Timetable</h1>
-      <div class="flex gap-2">
-        <button id="btnD1" class="px-4 py-1.5 bg-indigo-600 text-white rounded-full text-sm font-bold shadow-sm transition-colors" onclick="switchDay('d1')">Day 1</button>
-        <button id="btnD2" class="px-4 py-1.5 bg-slate-100 text-slate-500 rounded-full text-sm font-bold transition-colors" onclick="switchDay('d2')">Day 2</button>
-      </div>
+  <header>
+    <h1>GG FES TT</h1>
+    <div class="day-switch">
+      <button id="btn-d1" class="active" onclick="switchDay('d1')">Day 1</button>
+      <button id="btn-d2" onclick="switchDay('d2')">Day 2</button>
     </div>
   </header>
 
-  <!-- タブナビゲーション -->
-  <nav class="bg-white border-b flex max-w-4xl mx-auto w-full">
-    <button id="tabTime" class="flex-1 py-3 text-center font-bold border-b-2 border-indigo-600 text-indigo-600 transition-colors" onclick="switchTab('timetable')">タイムテーブル</button>
-    <button id="tabArtist" class="flex-1 py-3 text-center font-bold border-b-2 border-transparent text-slate-500 transition-colors" onclick="switchTab('artist')">出演者一覧</button>
-  </nav>
+  <!-- タブ -->
+  <div class="tab-nav">
+    <button id="tab-timetable" class="active" onclick="switchTab('timetable')">タイムテーブル</button>
+    <button id="tab-artist" onclick="switchTab('artist')">出演者一覧</button>
+  </div>
 
-  <!-- メインコンテンツ -->
-  <main class="flex-1 overflow-hidden relative max-w-4xl mx-auto w-full bg-white">
-    <!-- タイムテーブル画面 -->
-    <div id="viewTimetable" class="h-full flex flex-col">
-      <div class="flex flex-1 overflow-hidden relative">
-        <!-- 時間軸 -->
-        <div id="timeAxis" class="time-axis shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"></div>
-        <!-- ステージ領域 -->
-        <div id="stagesContainer" class="flex flex-1 overflow-x-auto relative scroll-smooth">
-          <!-- JSで描画 -->
+  <!-- メイン領域 -->
+  <main>
+    <!-- タイムテーブルビュー -->
+    <div id="view-timetable" class="view-area active">
+      <div class="timetable-container">
+        <!-- 左側の時間軸 -->
+        <div class="time-axis" id="time-axis"></div>
+        <!-- 右側のステージ領域 -->
+        <div class="stages-wrapper" id="stages-wrapper" onscroll="syncScroll()">
+          <div id="stages-container" style="display: flex; width: 100%; position: relative;"></div>
         </div>
       </div>
     </div>
 
-    <!-- 出演者一覧画面 -->
-    <div id="viewArtist" class="h-full overflow-y-auto p-4 hidden-tab bg-slate-50">
-      <div id="artistListContainer" class="pb-10">
-        <!-- JSで描画 -->
-      </div>
+    <!-- 出演者一覧ビュー -->
+    <div id="view-artist" class="view-area">
+      <div class="artist-list-container" id="artist-list"></div>
     </div>
   </main>
 
-  <!-- モーダル（詳細画面） -->
-  <div id="actModal" class="fixed inset-0 z-50 hidden flex items-end sm:items-center justify-center">
-    <div id="modalOverlay" class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onclick="closeModal()"></div>
-    <div class="bg-white w-full sm:w-96 rounded-t-2xl sm:rounded-2xl p-6 relative z-10 transform transition-transform translate-y-full sm:translate-y-0 shadow-2xl" id="modalContent">
-      <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1 bg-slate-100 rounded-full">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-      </button>
-      
-      <div class="flex items-center gap-2 mb-3 mt-1">
-        <span id="modalStage" class="text-xs font-bold px-2.5 py-1 rounded-md text-white shadow-sm">STAGE</span>
-        <span id="modalTime" class="text-sm text-slate-500 font-mono bg-slate-100 px-2 py-1 rounded">00:00 - 00:00</span>
-      </div>
-      
-      <h2 id="modalName" class="text-2xl font-black mb-6 text-slate-800 leading-tight">Artist Name</h2>
-      
-      <button id="btnToggleSelect" class="w-full py-3.5 rounded-xl font-bold text-white transition-all transform active:scale-95 shadow-md">
-        マイテーブルに追加
-      </button>
-    </div>
+  <!-- モーダル領域 -->
+  <div id="modal-overlay" onclick="closeModal()"></div>
+  <div id="act-modal">
+    <div class="modal-close" onclick="closeModal()">×</div>
+    <div id="modal-stage" style="font-size: 0.8rem; font-weight: bold; color: #666;">STAGE NAME</div>
+    <h2 id="modal-title" style="margin: 5px 0;">Artist Name</h2>
+    <div id="modal-time" style="font-size: 1rem; margin-bottom: 10px;">00:00 - 00:00</div>
+    <button id="modal-btn" class="btn-my-table btn-add" onclick="toggleMyTable()">マイテーブルに追加</button>
   </div>
 
   <script>
@@ -128,49 +288,27 @@
     let dataDay2 = {};
     let currentDay = "d1";
     let currentTab = "timetable";
-    let selectedActMap = new Map(); // マイテーブルに登録したアクトの保存用
-
-    // タイムテーブルの表示設定
-    const MIN_TIME = 9 * 60;   // 開始時間 09:00
-    const MAX_TIME = 21 * 60;  // 終了時間 21:00
-    const PIXELS_PER_MINUTE = 4; // 1分あたりの高さ(px)。広げたい場合は数字を大きくする
-
-    const STAGE_ORDER = ["mori", "yoshi", "vivid"];
-    const STAGE_NAMES = {
-      mori: "MORI",
-      yoshi: "YOSHI",
-      vivid: "VIVID"
-    };
-    const STAGE_COLORS = {
-      mori: "#4ade80",   // 緑
-      yoshi: "#60a5fa",  // 青
-      vivid: "#f472b6"   // ピンク
-    };
-
-    const MODAL = document.getElementById("actModal");
-    const MODAL_CONTENT = document.getElementById("modalContent");
-    let currentModalAct = null;
-
-    // --- 2. ユーティリティ関数 ---
-    function formatTime(h, m) { 
-      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; 
-    }
     
-    // マイテーブルの保存 (ローカルストレージ)
-    function saveData() { 
-      try { 
-        localStorage.setItem("gg_fes_acts", JSON.stringify(Object.fromEntries(selectedActMap))); 
-      } catch(e) { console.error("Save failed", e); } 
-    }
+    // マイテーブル用 (選択されたアクトのIDを保存)
+    let selectedActMap = new Map();
 
-    // 🌟 追加した「五十音順判定」関数
-    function getYomiGroup(name) {
-      if (!name) return "その他";
-      
-      // 今回は簡易的に「名前の先頭の文字」でグループ分けします。
-      // ※英語名などの場合はアルファベット、記号は「その他」に分類されます。
-      const c = name.charAt(0);
-      
+    // タイムテーブルの描画設定
+    const MIN_TIME = 9 * 60;   // 開始 09:00 (分)
+    const MAX_TIME = 21 * 60;  // 終了 21:00 (分)
+    const PX_PER_MIN = 3;      // 1分あたりのピクセル数(縦の長さ)
+
+    // ステージ定義
+    const STAGE_KEYS = ["mori", "yoshi", "vivid"];
+    const STAGE_NAMES = { mori: "MORI", yoshi: "YOSHI", vivid: "VIVID" };
+    const STAGE_COLORS = { mori: "var(--stage-mori)", yoshi: "var(--stage-yoshi)", vivid: "var(--stage-vivid)" };
+
+    // --- 2. ユーティリティ ---
+    function formatTime(h, m) { return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; }
+    function saveData() { try { localStorage.setItem("gg_fes_acts", JSON.stringify(Object.fromEntries(selectedActMap))); } catch(e) {} }
+    
+    function getYomiGroup(name, yomi) {
+      if (!yomi) return "その他";
+      const c = yomi.charAt(0);
       if ("あいうえおぁぃぅぇぉ".includes(c)) return "あ行";
       if ("かきくけこがぎぐげご".includes(c)) return "か行";
       if ("さしすせそざじずぜぞ".includes(c)) return "さ行";
@@ -181,283 +319,206 @@
       if ("やゆよゃゅょ".includes(c)) return "や行";
       if ("らりるれろ".includes(c)) return "ら行";
       if ("わをん".includes(c)) return "わ行";
-      if (/[A-Za-z]/.test(c)) return c.toUpperCase(); // アルファベット
+      if (/[A-Za-z]/.test(c)) return c.toUpperCase();
       return "その他";
     }
 
-    // --- 3. データパース処理 ---
+    // --- 3. データパース ---
+    // フォーマット: "名前,ヨミ,開始時,開始分,終了時,終了分"
     function parseActs(rawObj, dayId) {
-      const result = {};
-      for (const stage of STAGE_ORDER) {
-        result[stage] = [];
-        if (!rawObj[stage]) continue;
+      const res = {};
+      STAGE_KEYS.forEach(st => {
+        res[st] = [];
+        if (!rawObj[st]) return;
         
-        const actStrings = rawObj[stage].split('|');
-        for (const actStr of actStrings) {
-          const parts = actStr.split(',');
-          if (parts.length < 5) continue;
+        const acts = rawObj[st].split('|');
+        acts.forEach(actStr => {
+          const p = actStr.split(',');
+          if (p.length < 6) return;
           
-          const name = parts[0];
-          const sh = parseInt(parts[1], 10);
-          const sm = parseInt(parts[2], 10);
-          const eh = parseInt(parts[3], 10);
-          const em = parseInt(parts[4], 10);
-          
-          const startMin = sh * 60 + sm;
-          const endMin = eh * 60 + em;
-          const id = `${dayId}_${stage}_${name}`;
+          const name = p[0];
+          const yomi = p[1];
+          const sh = parseInt(p[2],10);
+          const sm = parseInt(p[3],10);
+          const eh = parseInt(p[4],10);
+          const em = parseInt(p[5],10);
+          const sMin = sh*60 + sm;
+          const eMin = eh*60 + em;
+          const id = `${dayId}_${st}_${name}`;
 
-          result[stage].push({
-            id: id,
-            day: dayId,
-            stage: stage,
-            name: name,
-            startH: sh, startM: sm,
-            endH: eh, endM: em,
-            startTotal: startMin,
-            endTotal: endMin
-          });
-        }
-      }
-      return result;
+          res[st].push({ id, day: dayId, stage: st, name, yomi, sMin, eMin, sh, sm, eh, em });
+        });
+      });
+      return res;
     }
 
-    // --- 4. 初期化・描画処理 ---
-    function initData() {
-      // 🌟 変数名が被らないように修正した部分
-      const rawDay1 = {
-        mori: "RiNCENT #,10,30,10,55|α＋,10,55,11,20|Falench.,11,20,11,45|#PEXACOA,11,45,12,10|FES☆TIVE,12,10,12,35|まねきケチャ,12,35,13,00|STAiNY,13,00,13,25|chuLa,13,25,13,50|NANIMONO,13,50,14,15|Appare!,14,15,14,45|ドラマチックレコード,14,45,15,10|UtaGe!,15,10,15,35|iLiFE!,15,35,16,05|JamsCollection,16,05,16,35|アンスリューム,16,35,17,00|マーキュロ,17,00,17,25|Merry BAD TUNE.,17,25,17,50|高嶺のなでしこ,17,50,18,15|真っ白なキャンバス,18,15,18,45|のんふぃく！,18,45,19,10|夜光性アミューズ,19,10,19,35|かすみ草とステラ,19,35,20,00",
-        yoshi: "AZATOY,10,40,11,00|ポンコツコンポ,11,00,11,20|ラブアグレッション,11,20,11,40|アキストゼネコ,11,40,12,00|ナナランド,12,00,12,25|AVAM,12,25,12,45|ルージュブック,12,45,13,05|点染テンセイ少女。,13,05,13,25|のらりくらり,13,25,13,45|透色ドロップ,13,45,14,05|手羽先センセーション,14,05,14,30|SUPER☆GiRLS,14,30,14,50|CANDY TUNE,14,50,15,15|Peel the Apple,15,15,15,40|タイトル未定,15,40,16,00|虹のコンキスタドール,16,00,16,25|Task have Fun,16,25,16,50|Devil ANTHEM.,16,50,17,15|INUWASI,17,15,17,40|NEO JAPONISM,17,40,18,05|MIGMA SHELTER,18,05,18,30|神使轟く、激情の如く。,18,30,18,55|シンデレラ宣言！,18,55,19,15|ZOC,19,15,19,40",
-        vivid: "あまいものつめあわせ,10,25,10,40|Mooove!,10,40,10,55|ガガピエロ,10,55,11,10|#ドレミファソラシード,11,10,11,25|ideal peco,11,25,11,40|あくしゅ！,11,40,11,55|Drug&Drop,11,55,12,10|Titi,12,10,12,25|make mie,12,25,12,40|なみだ色の消しごむ,12,40,12,55|しろもん,12,55,13,10|I'mew（あいみゅう）,13,10,13,25|SAI 2Rium,13,25,13,40|LADYBABY,13,40,13,55|Bunny La Crew,13,55,14,15|NANONI,14,15,14,30|Alloy,14,30,14,45|Axelight,14,45,15,00|マージナルマン,15,00,15,15|1000日後の話。,15,15,15,30|Mirror,Mirror,15,30,15,50|キングサリ,15,50,16,10|終わらないで、夜,16,10,16,25|COMIQ ON!,16,25,16,40|ノルニル,16,40,16,55|ベンジャス！,16,55,17,15|衛星とカラテア,17,15,17,35|太陽と踊れ月夜に唄え,17,35,17,55|PIGGS,17,55,18,15|ジエメイ,18,15,18,35|二丁目の魁カミングアウト,18,35,18,55|Kolokol,18,55,19,15|Ringwanderung,19,15,19,35|Pimm's,19,35,19,55"
-      };
-
-      const rawDay2 = {
-        mori: "君と見るそら,10,00,10,25|RAViDAVi,10,25,10,50|KATACOTO＊BANK,10,50,11,15|Merry BAD TUNE.,11,15,11,40|JamsCollection,11,40,12,05|Peel the Apple,12,05,12,30|NEO JAPONISM,12,30,12,55|真っ白なキャンバス,12,55,13,25|FES☆TIVE,13,25,13,50|iLiFE!,13,50,14,20|夜光性アミューズ,14,20,14,45|高嶺のなでしこ,14,45,15,10|アンスリューム,15,10,15,35|まねきケチャ,15,35,16,00|Task have Fun,16,00,16,25|かすみ草とステラ,16,25,16,50|Devil ANTHEM.,16,50,17,15|chuLa,17,15,17,40|Appare!,17,40,18,10|ナナランド,18,10,18,35|のんふぃく！,18,35,19,00|マーキュロ,19,00,19,25|NANIMONO,19,25,19,50|STAiNY,19,50,20,15",
-        yoshi: "あまいものつめあわせ,10,30,10,50|#よーよーよー,10,50,11,10|ルージュブック,11,10,11,30|ZOC,11,30,11,55|CANDY TUNE,11,55,12,20|SWEET STEADY,12,20,12,45|#ババババンビ,12,45,13,10|MyDearDarlin',13,10,13,35|INUWASI,13,35,14,00|タイトル未定,14,00,14,25|神使轟く、激情の如く。,14,25,14,50|ドラマチックレコード,14,50,15,15|SUPER☆GiRLS,15,15,15,40|手羽先センセーション,15,40,16,05|シンデレラ宣言！,16,05,16,30|#Mooove!,16,30,16,50|点染テンセイ少女。,16,50,17,10|テラス×テラス,17,10,17,30|UtaGe!,17,30,17,50|Falench.,17,50,18,10|#PEXACOA,18,10,18,30|I MY ME MINE,18,30,18,50|のらりくらり,18,50,19,10|ポンコツコンポ,19,10,19,30",
-        vivid: "えあらびゅー,10,15,10,30|Re:INCARNATION,10,30,10,45|メイビーME,10,45,11,00|TEARS-ティアーズ-,11,00,11,15|Bety,11,15,11,30|にっぽん！真骨頂,11,30,11,45|ミリオン！〜Million My Harem〜,11,45,12,00|#ピコリフ,12,00,12,15|I'mew（あいみゅう）,12,15,12,30|しろもん,12,30,12,45|なんキニ！,12,45,13,00|Bunny La Crew,13,00,13,15|透色ドロップ,13,15,13,35|Lily of the valley,13,35,13,50|ベンジャス！,13,50,14,10|太陽と踊れ月夜に唄え,14,10,14,30|ジエメイ,14,30,14,50|二丁目の魁カミングアウト,14,50,15,10|PRSMIN,15,10,15,30|MEWM,15,30,15,50|PIGGS,15,50,16,10|MIGMA SHELTER,16,10,16,30|Mirror,Mirror,16,30,16,50|衛星とカラテア,16,50,17,10|Ringwanderung,17,10,17,30|キングサリ,17,30,17,50|Kolokol,17,50,18,10|NEO KISSA,18,10,18,25|THE ORCHESTRA TOKYO,18,25,18,45|yosugala,18,45,19,05|Quubi,19,05,19,25|Merry BAD TUNE.（後夜祭）,19,25,19,45|INUWASI（後夜祭）,19,45,20,05"
-      };
-
-      // グローバル変数へ代入
-      dataDay1 = parseActs(rawDay1, "d1");
-      dataDay2 = parseActs(rawDay2, "d2");
-    }
-
-    function loadSavedData() {
-      try {
-        const saved = localStorage.getItem("gg_fes_acts");
-        if (saved) {
-          const obj = JSON.parse(saved);
-          selectedActMap = new Map(Object.entries(obj));
-        }
-      } catch (e) { console.error("Load failed", e); }
-    }
-
+    // --- 4. 描画処理 ---
     function drawTimeAxis() {
-      const axis = document.getElementById("timeAxis");
-      axis.innerHTML = "";
+      const axis = document.getElementById("time-axis");
+      axis.innerHTML = '<div style="height:30px; border-bottom:1px solid #ccc;"></div>'; // ヘッダー用空き
       
-      const headerSpace = document.createElement("div");
-      headerSpace.className = "h-[42px] border-b-2 border-slate-200"; // ヘッダーの高さを合わせる
-      axis.appendChild(headerSpace);
+      const totalMin = MAX_TIME - MIN_TIME;
+      const height = totalMin * PX_PER_MIN;
+      
+      const wrap = document.createElement("div");
+      wrap.style.height = height + "px";
+      wrap.style.position = "relative";
 
-      const totalMins = MAX_TIME - MIN_TIME;
-      const height = totalMins * PIXELS_PER_MINUTE;
-      
-      const container = document.createElement("div");
-      container.style.height = `${height}px`;
-      container.style.position = "relative";
-      
       for (let h = 9; h <= 21; h++) {
         const min = h * 60;
         if (min < MIN_TIME || min > MAX_TIME) continue;
+        const top = (min - MIN_TIME) * PX_PER_MIN;
         
-        const top = (min - MIN_TIME) * PIXELS_PER_MINUTE;
-        
-        const label = document.createElement("div");
-        label.className = "absolute text-[10px] text-slate-400 font-mono text-center w-full";
-        label.style.top = `${top - 7}px`; // 縦の中央に合わせる
-        label.textContent = `${h}:00`;
-        container.appendChild(label);
+        const lbl = document.createElement("div");
+        lbl.className = "time-label";
+        lbl.style.top = (top - 8) + "px";
+        lbl.textContent = `${h}:00`;
+        wrap.appendChild(lbl);
       }
-      axis.appendChild(container);
+      axis.appendChild(wrap);
     }
 
     function drawTimetable() {
-      const container = document.getElementById("stagesContainer");
+      const container = document.getElementById("stages-container");
       container.innerHTML = "";
       
-      const dayData = currentDay === "d1" ? dataDay1 : dataDay2;
-      const totalMins = MAX_TIME - MIN_TIME;
-      const height = totalMins * PIXELS_PER_MINUTE;
+      const data = currentDay === "d1" ? dataDay1 : dataDay2;
+      const height = (MAX_TIME - MIN_TIME) * PX_PER_MIN;
 
-      STAGE_ORDER.forEach(stageKey => {
-        const acts = dayData[stageKey] || [];
-        
+      STAGE_KEYS.forEach(st => {
         const col = document.createElement("div");
-        col.className = "stage-column";
+        col.className = "stage-col";
         
-        const header = document.createElement("div");
-        header.className = "stage-header h-[42px] flex items-center justify-center text-sm";
-        header.style.color = STAGE_COLORS[stageKey];
-        header.textContent = STAGE_NAMES[stageKey];
-        col.appendChild(header);
+        // ステージヘッダー
+        const head = document.createElement("div");
+        head.className = "stage-header";
+        head.textContent = STAGE_NAMES[st];
+        head.style.backgroundColor = STAGE_COLORS[st];
+        col.appendChild(head);
 
+        // コンテンツ領域
         const content = document.createElement("div");
-        content.style.height = `${height}px`;
+        content.style.height = height + "px";
         content.style.position = "relative";
 
-        // 背景の罫線（30分ごと）
-        for (let m = MIN_TIME; m <= MAX_TIME; m += 30) {
+        // 背景線(30分刻み)
+        for(let m = MIN_TIME; m <= MAX_TIME; m+=30) {
           const line = document.createElement("div");
-          line.className = "absolute w-full border-b border-slate-100";
-          line.style.top = `${(m - MIN_TIME) * PIXELS_PER_MINUTE}px`;
+          line.style.position = "absolute";
+          line.style.width = "100%";
+          line.style.borderBottom = "1px solid #eee";
+          line.style.top = ((m - MIN_TIME) * PX_PER_MIN) + "px";
           content.appendChild(line);
         }
 
-        // アクト（出演枠）の配置
-        acts.forEach(act => {
-          const top = (act.startTotal - MIN_TIME) * PIXELS_PER_MINUTE;
-          const h = (act.endTotal - act.startTotal) * PIXELS_PER_MINUTE;
-          
-          const el = document.createElement("div");
-          el.className = "act-card flex flex-col justify-center";
-          el.style.top = `${top}px`;
-          el.style.height = `${h - 2}px`; // 下に2pxの隙間をあける
-          
-          const isSelected = selectedActMap.has(act.id);
-          // 選択時は背景を濃く、非選択時は透明度を持たせる
-          el.style.backgroundColor = isSelected ? STAGE_COLORS[stageKey] : `${STAGE_COLORS[stageKey]}22`; 
-          el.style.color = isSelected ? "#fff" : "#1e293b";
-          if (isSelected) el.classList.add("act-selected");
-          
-          el.innerHTML = `
-            <div class="font-bold truncate text-center">${act.name}</div>
-            <div class="text-[9px] opacity-80 text-center font-mono mt-0.5">${formatTime(act.startH, act.startM)}-${formatTime(act.endH, act.endM)}</div>
-          `;
-          
-          el.onclick = () => openModal(act);
-          content.appendChild(el);
-        });
+        // アクト配置
+        if (data[st]) {
+          data[st].forEach(act => {
+            const top = (act.sMin - MIN_TIME) * PX_PER_MIN;
+            const h = (act.eMin - act.sMin) * PX_PER_MIN;
+            
+            const box = document.createElement("div");
+            box.className = "act-box";
+            box.style.top = top + "px";
+            box.style.height = (h - 1) + "px"; // 隙間
+            box.style.backgroundColor = STAGE_COLORS[st];
+            
+            if (selectedActMap.has(act.id)) {
+              box.classList.add("selected");
+            } else {
+              if(selectedActMap.size > 0) box.classList.add("unselected");
+            }
 
+            box.innerHTML = `
+              <div style="font-weight:bold;">${act.name}</div>
+              <div style="font-size:0.65rem; color:#555;">${formatTime(act.sh,act.sm)}-${formatTime(act.eh,act.em)}</div>
+            `;
+            box.onclick = () => openModal(act);
+            
+            content.appendChild(box);
+          });
+        }
         col.appendChild(content);
         container.appendChild(col);
       });
     }
 
     function drawArtistList() {
-      const container = document.getElementById("artistListContainer");
+      const container = document.getElementById("artist-list");
       container.innerHTML = "";
       
-      const dayData = currentDay === "d1" ? dataDay1 : dataDay2;
-      
-      // その日の全アクトをフラットな配列にする
+      const data = currentDay === "d1" ? dataDay1 : dataDay2;
       let allActs = [];
-      STAGE_ORDER.forEach(stageKey => {
-        allActs = allActs.concat(dayData[stageKey] || []);
+      STAGE_KEYS.forEach(st => {
+        if(data[st]) allActs = allActs.concat(data[st]);
       });
-      
-      // getYomiGroup 関数を使ってグループ分け
+
+      // 五十音グループ分け
       const groups = {};
       allActs.forEach(act => {
-        const group = getYomiGroup(act.name);
-        if (!groups[group]) groups[group] = [];
-        groups[group].push(act);
+        const g = getYomiGroup(act.name, act.yomi);
+        if(!groups[g]) groups[g] = [];
+        groups[g].push(act);
       });
-      
-      // グループ名でソートして描画
-      Object.keys(groups).sort().forEach(groupName => {
-        const h3 = document.createElement("h3");
-        h3.className = "text-sm font-black mt-6 mb-2 text-slate-400 pl-2";
-        h3.textContent = groupName;
-        container.appendChild(h3);
-        
-        const list = document.createElement("div");
-        list.className = "bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm";
-        
-        // グループ内で名前順にソート
-        groups[groupName].sort((a, b) => a.name.localeCompare(b.name, 'ja')).forEach((act, idx) => {
-          if (idx > 0) {
-            const line = document.createElement("div");
-            line.className = "border-t border-slate-100 mx-4";
-            list.appendChild(line);
-          }
-          
+
+      const sortedKeys = Object.keys(groups).sort();
+      sortedKeys.forEach(gKey => {
+        const title = document.createElement("div");
+        title.className = "yomi-group-title";
+        title.textContent = gKey;
+        container.appendChild(title);
+
+        groups[gKey].sort((a,b)=> a.yomi.localeCompare(b.yomi, 'ja')).forEach(act => {
           const item = document.createElement("div");
-          item.className = "flex justify-between items-center p-4 hover:bg-slate-50 cursor-pointer active:bg-slate-100 transition-colors";
+          item.className = "artist-list-item";
+          
+          let html = `<div>
+            <div style="font-weight:bold;">${act.name}</div>
+            <div style="font-size:0.8rem; color:#666;">
+              <span style="display:inline-block; padding:2px 5px; border-radius:3px; background:${STAGE_COLORS[act.stage]}; font-size:0.7rem;">${STAGE_NAMES[act.stage]}</span>
+              ${formatTime(act.sh,act.sm)} - ${formatTime(act.eh,act.em)}
+            </div>
+          </div>`;
+          
+          if(selectedActMap.has(act.id)) {
+             html += `<div style="color:red; font-size:0.8rem; font-weight:bold;">★</div>`;
+          }
+
+          item.innerHTML = html;
           item.onclick = () => openModal(act);
-          
-          const isSelected = selectedActMap.has(act.id);
-          
-          item.innerHTML = `
-            <div>
-              <div class="font-bold flex items-center gap-2 text-slate-800">
-                ${act.name}
-                ${isSelected ? '<span class="text-[10px] bg-red-50 text-red-500 border border-red-200 px-1.5 py-0.5 rounded">追加済み</span>' : ''}
-              </div>
-              <div class="text-xs text-slate-500 mt-1.5 flex items-center gap-2">
-                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold text-white shadow-sm" style="background-color: ${STAGE_COLORS[act.stage]}">${STAGE_NAMES[act.stage]}</span>
-                <span class="font-mono text-slate-400">${formatTime(act.startH, act.startM)} - ${formatTime(act.endH, act.endM)}</span>
-              </div>
-            </div>
-            <div class="text-slate-300">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-            </div>
-          `;
-          list.appendChild(item);
+          container.appendChild(item);
         });
-        
-        container.appendChild(list);
       });
-      
-      // リストが空の場合の対応
-      if (Object.keys(groups).length === 0) {
-        container.innerHTML = `<div class="text-center text-slate-400 py-10">データがありません</div>`;
-      }
     }
 
-    // --- 5. UI操作 ---
-    function switchDay(day) {
-      currentDay = day;
-      
-      const btnD1 = document.getElementById("btnD1");
-      const btnD2 = document.getElementById("btnD2");
-      
-      if (day === "d1") {
-        btnD1.className = "px-4 py-1.5 bg-indigo-600 text-white rounded-full text-sm font-bold shadow-sm transition-colors";
-        btnD2.className = "px-4 py-1.5 bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-full text-sm font-bold transition-colors";
-      } else {
-        btnD1.className = "px-4 py-1.5 bg-slate-100 text-slate-500 hover:bg-slate-200 rounded-full text-sm font-bold transition-colors";
-        btnD2.className = "px-4 py-1.5 bg-indigo-600 text-white rounded-full text-sm font-bold shadow-sm transition-colors";
-      }
-      
-      refreshCurrentView();
+    // スクロール同期
+    function syncScroll() {
+      const wrapper = document.getElementById("stages-wrapper");
+      const axis = document.getElementById("time-axis");
+      axis.style.top = -wrapper.scrollTop + "px"; 
+      // ※stickyが効かない環境向けの簡易同期。
+      // stickyを使う場合は構造を変える必要がありますが、今回は現状のロジックを優先。
     }
 
-    function switchTab(tab) {
-      currentTab = tab;
-      
-      const tabTime = document.getElementById("tabTime");
-      const tabArtist = document.getElementById("tabArtist");
-      const viewTime = document.getElementById("viewTimetable");
-      const viewArtist = document.getElementById("viewArtist");
-      
-      if (tab === "timetable") {
-        tabTime.className = "flex-1 py-3 text-center font-bold border-b-2 border-indigo-600 text-indigo-600 transition-colors";
-        tabArtist.className = "flex-1 py-3 text-center font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 transition-colors";
-        viewTime.classList.remove("hidden-tab");
-        viewArtist.classList.add("hidden-tab");
-      } else {
-        tabArtist.className = "flex-1 py-3 text-center font-bold border-b-2 border-indigo-600 text-indigo-600 transition-colors";
-        tabTime.className = "flex-1 py-3 text-center font-bold border-b-2 border-transparent text-slate-500 hover:bg-slate-50 transition-colors";
-        viewArtist.classList.remove("hidden-tab");
-        viewTime.classList.add("hidden-tab");
-      }
-      
-      refreshCurrentView();
+    // --- 5. UI制御 ---
+    function switchDay(d) {
+      currentDay = d;
+      document.getElementById("btn-d1").classList.toggle("active", d==="d1");
+      document.getElementById("btn-d2").classList.toggle("active", d==="d2");
+      refreshView();
     }
 
-    function refreshCurrentView() {
-      if (currentTab === "timetable") {
+    function switchTab(t) {
+      currentTab = t;
+      document.getElementById("tab-timetable").classList.toggle("active", t==="timetable");
+      document.getElementById("tab-artist").classList.toggle("active", t==="artist");
+      document.getElementById("view-timetable").classList.toggle("active", t==="timetable");
+      document.getElementById("view-artist").classList.toggle("active", t==="artist");
+      refreshView();
+    }
+
+    function refreshView() {
+      if(currentTab === "timetable"){
         drawTimeAxis();
         drawTimetable();
       } else {
@@ -465,72 +526,90 @@
       }
     }
 
-    // --- 6. モーダル操作 ---
+    // --- 6. モーダル ---
+    let targetAct = null;
     function openModal(act) {
-      currentModalAct = act;
+      targetAct = act;
+      document.getElementById("modal-title").textContent = act.name;
+      document.getElementById("modal-stage").textContent = STAGE_NAMES[act.stage];
+      document.getElementById("modal-stage").style.color = STAGE_COLORS[act.stage];
+      document.getElementById("modal-time").textContent = `${formatTime(act.sh,act.sm)} - ${formatTime(act.eh,act.em)}`;
       
-      document.getElementById("modalName").textContent = act.name;
-      document.getElementById("modalTime").textContent = `${formatTime(act.startH, act.startM)} - ${formatTime(act.endH, act.endM)}`;
-      
-      const stageBadge = document.getElementById("modalStage");
-      stageBadge.textContent = STAGE_NAMES[act.stage];
-      stageBadge.style.backgroundColor = STAGE_COLORS[act.stage];
-      
-      updateModalButton();
-      
-      MODAL.classList.remove("hidden");
-      // 少し遅延させてCSSアニメーションを発火
-      setTimeout(() => {
-        MODAL_CONTENT.classList.remove("translate-y-full");
-        document.getElementById("modalOverlay").classList.add("opacity-100");
+      updateModalBtn();
+
+      document.getElementById("modal-overlay").style.display = "block";
+      document.getElementById("act-modal").style.display = "block";
+      setTimeout(()=> {
+        document.getElementById("act-modal").classList.add("show");
       }, 10);
     }
 
     function closeModal() {
-      MODAL_CONTENT.classList.add("translate-y-full");
-      document.getElementById("modalOverlay").classList.remove("opacity-100");
-      setTimeout(() => {
-        MODAL.classList.add("hidden");
-        currentModalAct = null;
-      }, 300); // Tailwindのtransitionに合わせる
+      document.getElementById("act-modal").classList.remove("show");
+      setTimeout(()=> {
+        document.getElementById("modal-overlay").style.display = "none";
+        document.getElementById("act-modal").style.display = "none";
+        targetAct = null;
+      }, 300);
     }
 
-    function updateModalButton() {
-      if (!currentModalAct) return;
-      const btn = document.getElementById("btnToggleSelect");
-      const isSelected = selectedActMap.has(currentModalAct.id);
-      
-      if (isSelected) {
+    function toggleMyTable() {
+      if(!targetAct) return;
+      if(selectedActMap.has(targetAct.id)) {
+        selectedActMap.delete(targetAct.id);
+      } else {
+        selectedActMap.set(targetAct.id, true);
+      }
+      saveData();
+      updateModalBtn();
+      refreshView(); // 裏の描画も更新
+    }
+
+    function updateModalBtn() {
+      const btn = document.getElementById("modal-btn");
+      if(selectedActMap.has(targetAct.id)) {
         btn.textContent = "マイテーブルから削除";
-        btn.className = "w-full py-3.5 rounded-xl font-bold text-red-600 bg-red-50 border-2 border-red-200 transition-all transform active:scale-95";
+        btn.className = "btn-my-table btn-remove";
       } else {
         btn.textContent = "マイテーブルに追加";
-        btn.className = "w-full py-3.5 rounded-xl font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all transform active:scale-95 shadow-md";
+        btn.className = "btn-my-table btn-add";
       }
     }
 
-    document.getElementById("btnToggleSelect").onclick = () => {
-      if (!currentModalAct) return;
-      const id = currentModalAct.id;
-      
-      // 追加・削除の切り替え
-      if (selectedActMap.has(id)) {
-        selectedActMap.delete(id);
-      } else {
-        selectedActMap.set(id, true);
-      }
-      
-      saveData();
-      updateModalButton();
-      refreshCurrentView(); // 閉じた後に裏側のUIも更新しておく
-    };
+    // --- 7. 初期化 ---
+    function initData() {
+      try {
+        const saved = localStorage.getItem("gg_fes_acts");
+        if(saved) {
+          const obj = JSON.parse(saved);
+          selectedActMap = new Map(Object.entries(obj));
+        }
+      } catch(e) {}
 
-    // --- 7. アプリ起動 ---
-    window.onload = () => {
-      initData();
-      loadSavedData();
-      switchTab("timetable"); // 初回描画
-    };
+      // ここにデータを定義 (カンマ区切り： 名前,ヨミ,開始時,開始分,終了時,終了分)
+      // 注意: 元データが "名前,時,分,時,分" (5項目) だったため、parseActsの前提(6項目: ヨミが必要)とズレていました。
+      // 今回は一時的にヨミを名前に代用するか、適当な文字を入れてパースエラーを防ぎます。
+      
+      const rawDay1 = {
+        mori: "RiNCENT #,りんせんと,10,30,10,55|α＋,あるふぁ,10,55,11,20|Falench.,ふぁれんち,11,20,11,45|#PEXACOA,ぺきさこあ,11,45,12,10|FES☆TIVE,ふぇすてぃぶ,12,10,12,35|まねきケチャ,まねきけちゃ,12,35,13,00|STAiNY,すていにー,13,00,13,25|chuLa,ちゅら,13,25,13,50|NANIMONO,なにもの,13,50,14,15|Appare!,あっぱれ,14,15,14,45|ドラマチックレコード,どらまちっくれこーど,14,45,15,10|UtaGe!,うたげ,15,10,15,35|iLiFE!,あいらいふ,15,35,16,05|JamsCollection,じゃむずこれくしょん,16,05,16,35|アンスリューム,あんすりゅーむ,16,35,17,00|マーキュロ,まーきゅろ,17,00,17,25|Merry BAD TUNE.,めりーばっどちゅーん,17,25,17,50|高嶺のなでしこ,たかねのなでしこ,17,50,18,15|真っ白なキャンバス,まっしろなきゃんばす,18,15,18,45|のんふぃく！,のんふぃく,18,45,19,10|夜光性アミューズ,やこうせいあみゅーず,19,10,19,35|かすみ草とステラ,かすみそうとすてら,19,35,20,00",
+        yoshi: "AZATOY,あざとい,10,40,11,00|ポンコツコンポ,ぽんこつこんぽ,11,00,11,20|ラブアグレッション,らぶあぐれっしょん,11,20,11,40|アキストゼネコ,あきすとぜねこ,11,40,12,00|ナナランド,なならんど,12,00,12,25|AVAM,あばむ,12,25,12,45|ルージュブック,るーじゅぶっく,12,45,13,05|点染テンセイ少女。,てんせんてんせいしょうじょ,13,05,13,25|のらりくらり,のらりくらり,13,25,13,45|透色ドロップ,すきいろどろっぷ,13,45,14,05|手羽先センセーション,てばさきせんせーしょん,14,05,14,30|SUPER☆GiRLS,すーぱーがーるず,14,30,14,50|CANDY TUNE,きゃんでぃーちゅーん,14,50,15,15|Peel the Apple,ぴーるじあっぷる,15,15,15,40|タイトル未定,たいとるみてい,15,40,16,00|虹のコンキスタドール,にじのこんきすたどーる,16,00,16,25|Task have Fun,たすくはぶふぁん,16,25,16,50|Devil ANTHEM.,でびるあんせむ,16,50,17,15|INUWASI,いぬわし,17,15,17,40|NEO JAPONISM,ねおじゃぽにずむ,17,40,18,05|MIGMA SHELTER,みぐましぇるたー,18,05,18,30|神使轟く、激情の如く。,しんしとどろく,18,30,18,55|シンデレラ宣言！,しんでれらせんげん,18,55,19,15|ZOC,ぞっく,19,15,19,40",
+        vivid: "あまいものつめあわせ,あまいものつめあわせ,10,25,10,40|Mooove!,むーぶ,10,40,10,55|ガガピエロ,ががぴえろ,10,55,11,10|#ドレミファソラシード,どれみふぁそらしーど,11,10,11,25|ideal peco,あいでぃあるぺこ,11,25,11,40|あくしゅ！,あくしゅ,11,40,11,55|Drug&Drop,どらっぐあんどどろっぷ,11,55,12,10|Titi,ちち,12,10,12,25|make mie,めいくみー,12,25,12,40|なみだ色の消しごむ,なみだいろのけしごむ,12,40,12,55|しろもん,しろもん,12,55,13,10|I'mew（あいみゅう）,あいみゅう,13,10,13,25|SAI 2Rium,さいつーりうむ,13,25,13,40|LADYBABY,れでぃべびー,13,40,13,55|Bunny La Crew,ばにーらくるー,13,55,14,15|NANONI,なのに,14,15,14,30|Alloy,あろい,14,30,14,45|Axelight,あくせらいと,14,45,15,00|マージナルマン,まーじなるまん,15,00,15,15|1000日後の話。,せんじつごのはなし,15,15,15,30|Mirror,Mirror,みらーみらー,15,30,15,50|キングサリ,きんぐさり,15,50,16,10|終わらないで、夜,おわらないでよる,16,10,16,25|COMIQ ON!,こみっきゅおん,16,25,16,40|ノルニル,のるにる,16,40,16,55|ベンジャス！,べんじゃす,16,55,17,15|衛星とカラテア,えいせいとからてあ,17,15,17,35|太陽と踊れ月夜に唄え,たいようとおどれ,17,35,17,55|PIGGS,ぴぐす,17,55,18,15|ジエメイ,じえめい,18,15,18,35|二丁目の魁カミングアウト,にちょうめのさきがけ,18,35,18,55|Kolokol,ころこる,18,55,19,15|Ringwanderung,りんぐわんでるんぐ,19,15,19,35|Pimm's,ぴむす,19,35,19,55"
+      };
+
+      const rawDay2 = {
+        mori: "君と見るそら,きみとみるそら,10,00,10,25|RAViDAVi,らびだび,10,25,10,50|KATACOTO＊BANK,かたごとばんく,10,50,11,15|Merry BAD TUNE.,めりーばっどちゅーん,11,15,11,40|JamsCollection,じゃむずこれくしょん,11,40,12,05|Peel the Apple,ぴーるじあっぷる,12,05,12,30|NEO JAPONISM,ねおじゃぽにずむ,12,30,12,55|真っ白なキャンバス,まっしろなきゃんばす,12,55,13,25|FES☆TIVE,ふぇすてぃぶ,13,25,13,50|iLiFE!,あいらいふ,13,50,14,20|夜光性アミューズ,やこうせいあみゅーず,14,20,14,45|高嶺のなでしこ,たかねのなでしこ,14,45,15,10|アンスリューム,あんすりゅーむ,15,10,15,35|まねきケチャ,まねきけちゃ,15,35,16,00|Task have Fun,たすくはぶふぁん,16,00,16,25|かすみ草とステラ,かすみそうとすてら,16,25,16,50|Devil ANTHEM.,でびるあんせむ,16,50,17,15|chuLa,ちゅら,17,15,17,40|Appare!,あっぱれ,17,40,18,10|ナナランド,なならんど,18,10,18,35|のんふぃく！,のんふぃく,18,35,19,00|マーキュロ,まーきゅろ,19,00,19,25|NANIMONO,なにもの,19,25,19,50|STAiNY,すていにー,19,50,20,15",
+        yoshi: "あまいものつめあわせ,あまいものつめあわせ,10,30,10,50|#よーよーよー,よーよーよー,10,50,11,10|ルージュブック,るーじゅぶっく,11,10,11,30|ZOC,ぞっく,11,30,11,55|CANDY TUNE,きゃんでぃーちゅーん,11,55,12,20|SWEET STEADY,すいーとすてでぃ,12,20,12,45|#ババババンビ,ばばばばんび,12,45,13,10|MyDearDarlin',まいでぃあだーりん,13,10,13,35|INUWASI,いぬわし,13,35,14,00|タイトル未定,たいとるみてい,14,00,14,25|神使轟く、激情の如く。,しんしとどろく,14,25,14,50|ドラマチックレコード,どらまちっくれこーど,14,50,15,15|SUPER☆GiRLS,すーぱーがーるず,15,15,15,40|手羽先センセーション,てばさきせんせーしょん,15,40,16,05|シンデレラ宣言！,しんでれらせんげん,16,05,16,30|#Mooove!,むーぶ,16,30,16,50|点染テンセイ少女。,てんせんてんせいしょうじょ,16,50,17,10|テラス×テラス,てらすてらす,17,10,17,30|UtaGe!,うたげ,17,30,17,50|Falench.,ふぁれんち,17,50,18,10|#PEXACOA,ぺきさこあ,18,10,18,30|I MY ME MINE,あいまいみーまいん,18,30,18,50|のらりくらり,のらりくらり,18,50,19,10|ポンコツコンポ,ぽんこつこんぽ,19,10,19,30",
+        vivid: "えあらびゅー,えあらびゅー,10,15,10,30|Re:INCARNATION,りいんかーねーしょん,10,30,10,45|メイビーME,めいびーみー,10,45,11,00|TEARS-ティアーズ-,てぃあーず,11,00,11,15|Bety,べてぃ,11,15,11,30|にっぽん！真骨頂,にっぽんしんこっちょう,11,30,11,45|ミリオン！〜Million My Harem〜,みりおん,11,45,12,00|#ピコリフ,ぴこりふ,12,00,12,15|I'mew（あいみゅう）,あいみゅう,12,15,12,30|しろもん,しろもん,12,30,12,45|なんキニ！,なんきに,12,45,13,00|Bunny La Crew,ばにーらくるー,13,00,13,15|透色ドロップ,すきいろどろっぷ,13,15,13,35|Lily of the valley,りりーおぶざばれー,13,35,13,50|ベンジャス！,べんじゃす,13,50,14,10|太陽と踊れ月夜に唄え,たいようとおどれ,14,10,14,30|ジエメイ,じえめい,14,30,14,50|二丁目の魁カミングアウト,にちょうめのさきがけ,14,50,15,10|PRSMIN,ぷりずみん,15,10,15,30|MEWM,みゅーむ,15,30,15,50|PIGGS,ぴぐす,15,50,16,10|MIGMA SHELTER,みぐましぇるたー,16,10,16,30|Mirror,Mirror,みらーみらー,16,30,16,50|衛星とカラテア,えいせいとからてあ,16,50,17,10|Ringwanderung,りんぐわんでるんぐ,17,10,17,30|キングサリ,きんぐさり,17,30,17,50|Kolokol,ころこる,17,50,18,10|NEO KISSA,ねおきっさ,18,10,18,25|THE ORCHESTRA TOKYO,じおーけすとらとうきょう,18,25,18,45|yosugala,よすがら,18,45,19,05|Quubi,きゅーび,19,05,19,25|Merry BAD TUNE.（後夜祭）,めりーばっどちゅーん,19,25,19,45|INUWASI（後夜祭）,いぬわし,19,45,20,05"
+      };
+
+      dataDay1 = parseActs(rawDay1, "d1");
+      dataDay2 = parseActs(rawDay2, "d2");
+      
+      refreshView();
+    }
+
+    window.onload = initData;
+
   </script>
 </body>
 </html>
