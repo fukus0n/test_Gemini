@@ -229,11 +229,17 @@
     function updateCounter() { $('check-counter').innerText = `選択中: ${selectedActMap.size}枠`; }
 
     function showToast(text) {
-      const box = $('custom-alert'); $('alert-text').innerText = text;
-      box.classList.remove("translate-y-24", "opacity-0"); box.classList.add("translate-y-0", "opacity-100");
-      clearTimeout(alertTimeout); alertTimeout = setTimeout(() => dismissAlert(), 2500);
+      const box = $('custom-alert');
+      $('alert-text').innerText = text;
+      box.classList.remove("translate-y-24", "opacity-0");
+      box.classList.add("translate-y-0", "opacity-100");
+      clearTimeout(alertTimeout);
+      alertTimeout = setTimeout(() => dismissAlert(), 2500);
     }
-    function dismissAlert() { $('custom-alert').classList.add('translate-y-24', 'opacity-0'); }
+    function dismissAlert() { 
+      $('custom-alert').classList.remove("translate-y-0", "opacity-100");
+      $('custom-alert').classList.add('translate-y-24', 'opacity-0'); 
+    }
 
     // --- 5. フィルター操作 ---
     function toggleFilterAccordion() {
