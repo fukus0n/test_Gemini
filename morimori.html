@@ -155,6 +155,9 @@
     let dataDay1 = [];     // [stage_id, [[group_id, sh, sm, eh, em], ...]]
     let dataDay2 = [];
     let stages = [];       // UI装飾用の加工済み配列
+
+    let scheduleDay1 = [];
+    let scheduleDay2 = [];
     
     let currentDay = 1, currentSchedules = [], selectedActMap = new Map();
     let activeTab = "all", visibleStageIds = new Set();
@@ -178,7 +181,7 @@
     window.onload = function() {
       initData(); // int配列群をデコードしてメモリに展開
       
-      currentSchedules = getFlatActs(dataDay1); 
+      currentSchedules = getFlatActs(scheduleDay1); 
       visibleStageIds = new Set(stages.filter(s => s.category === "live").map(s => s.id));
       
       try {
@@ -197,7 +200,7 @@
     // --- 4. UI切り替え系アクション ---
     function switchDay(day) {
       currentDay = day; 
-      currentSchedules = getFlatActs(day === 1 ? dataDay1 : dataDay2);
+      currentSchedules = getFlatActs(day === 1 ? scheduleDay1 : scheduleDay2);
       $('day1-btn').className = `${DAY_BUTTON_BASE} ${day === 1 ? DAY_BUTTON_STATE.active : DAY_BUTTON_STATE.inactive}`;
       $('day2-btn').className = `${DAY_BUTTON_BASE} ${day === 2 ? DAY_BUTTON_STATE.active : DAY_BUTTON_STATE.inactive}`;
       if(activeTab === 'all') renderGrid(); else if(activeTab === 'list') renderArtistDirectory(); else renderMySchedule();
@@ -269,7 +272,7 @@
 
     // --- 6. 出番単位の選択 ＆ モーダル ---
     function toggleActSelect(actId) {
-      const allActs = getFlatActs(dataDay1).concat(getFlatActs(dataDay2));
+      const allActs = getFlatActs(scheduleDay1).concat(getFlatActs(scheduleDay2));
       const act = allActs.find(a => a.id === actId);
       if (!act) return;
       
@@ -306,7 +309,7 @@
       const listContainer = document.getElementById("modal-schedule-list");
       listContainer.innerHTML = "";
       
-      const allActs = getFlatActs(dataDay1).concat(getFlatActs(dataDay2)).filter(a => a.groupId === groupId).sort((a, b) => a.startMin - b.startMin);
+      const allActs = getFlatActs(scheduleDay1).concat(getFlatActs(scheduleDay2)).filter(a => a.groupId === groupId).sort((a, b) => a.startMin - b.startMin);
 
       allActs.forEach(act => {
         const stage = stages.find(s => s.id === act.stageId);
@@ -343,7 +346,7 @@
     // --- 7. 描画共通関数・アルゴリズム ---
     function getFlatActs(dataArray) {
       const flat = [];
-      const prefix = dataArray === dataDay1 ? 'd1' : 'd2';
+      const prefix = dataArray === scheduleDay1 ? 'd1' : 'd2';
       dataArray.forEach(stageData => {
         const stageId = stageData[0];
         stageData[1].forEach(act => {
