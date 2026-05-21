@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>GIRLS GIRLS FESTIVAL 2026 マイタイテ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = { theme: { extend: { fontFamily: { sans: ['"M PLUS Rounded 1c"', 'sans-serif'], outfit: ['"Outfit"', 'sans-serif'] } } } };
+  </script>
+  <style>
+    /* 全体構造とスクロールの制御 */
+    html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #f8fafc; font-family: 'M PLUS Rounded 1c', sans-serif; -webkit-tap-highlight-color: transparent; }
+    .custom-scrollbar::-webkit-scrollbar { height: 5px; width: 5px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    .filter-transition { transition: max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+    
+    /* スクロール時のL字固定 ＆ 重ね順の厳密制御 (透け防止の背景色を追加) */
+    .z-timeline-now { z-index: 40 !important; }
+    .z-timeline-axis { z-index: 30 !important; background-color: #f8fafc !important; }
+    .sticky-time-header { z-index: 50 !important; background-color: #f8fafc !important; }
+    .stage-header-sticky { z-index: 20 !important; }
+  </style>
+</head>
+<body class="flex flex-col text-slate-800 h-[100dvh]">
+
+  <!-- ヘッダー -->
+  <header class="bg-gradient-to-r from-pink-500 via-purple-500 to-orange-400 text-white shadow-sm px-3 py-1.5 flex-none z-30">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-[9px] font-bold bg-white/20 px-1.5 py-0.5 rounded uppercase tracking-wider font-outfit hidden sm:inline-block">GGF 2026</span>
+        <!-- 日付切り替えスイッチ -->
+        <div class="flex bg-white/20 rounded-md p-0.5 ml-1">
+          <button id="day1-btn" onclick="switchDay(1)" class="px-2 py-0.5 rounded text-[10px] font-bold bg-white text-purple-600 shadow-sm transition-all">23日(土)</button>
+          <button id="day2-btn" onclick="switchDay(2)" class="px-2 py-0.5 rounded text-[10px] font-bold text-white hover:bg-white/10 transition-all">24日(日)</button>
+        </div>
+      </div>
+      <div id="check-counter" class="bg-white/20 px-2 py-0.5 rounded-full text-[10px] font-bold">選択中: 0枠</div>
+    </div>
+  </header>
+
+  <!-- タブ -->
+  <nav class="bg-white border-b border-slate-200 flex-none z-20 shadow-sm">
+    <div class="max-w-7xl mx-auto flex">
+      <button id="tab-all" onclick="switchTab('all')" class="flex-1 py-2 text-center font-black text-xs border-b-2 border-purple-600 text-purple-600 transition-all"><i class="fa-solid fa-border-all mr-1"></i>全体タイテ</button>
+      <button id="tab-list" onclick="switchTab('list')" class="flex-1 py-2 text-center font-black text-xs border-b-2 border-transparent text-slate-500 transition-all"><i class="fa-solid fa-users mr-1"></i>出演者</button>
+      <button id="tab-my" onclick="switchTab('my')" class="flex-1 py-2 text-center font-black text-xs border-b-2 border-transparent text-slate-500 transition-all"><i class="fa-solid fa-star text-amber-500 mr-1"></i>マイタイテ</button>
+    </div>
+  </nav>
+
+  <main class="flex-1 min-h-0 relative flex flex-col p-2 gap-2">
+    <!-- ▼ A. 全体タイムテーブル ▼ -->
+    <div id="view-all" class="flex-1 min-h-0 flex flex-col gap-2">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-100 flex-none overflow-hidden">
+        <div class="px-2.5 py-1.5 flex items-center justify-between text-[11px] gap-2">
+          <button onclick="toggleFilterAccordion()" class="flex items-center gap-1 font-bold text-slate-600 hover:text-purple-600 shrink-0 select-none active:scale-95 transition-transform">
+            <i class="fa-solid fa-filter text-purple-500"></i><span>エリア <span id="filter-summary-count" class="text-purple-600 font-black text-[10px]">(6)</span></span><i id="filter-chevron" class="fa-solid fa-chevron-down text-[8px] text-slate-400 transition-transform duration-200"></i>
+          </button>
+          <div class="h-4 w-px bg-slate-200 shrink-0"></div>
+          <div class="flex items-center gap-2 flex-1 justify-end min-w-0">
+            <button id="realtime-btn" onclick="toggleRealtimeMode()" class="px-1.5 py-0.5 rounded border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 font-bold flex items-center gap-1 transition-all shrink-0 active:scale-95 text-[10px]">
+              <i class="fa-regular fa-clock text-slate-400 text-[10px]" id="realtime-icon"></i><span id="realtime-btn-text">現在時刻</span>
+            </button>
+            <input type="range" id="time-slider" min="570" max="1320" value="720" class="flex-1 min-w-[50px] max-w-[130px] h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-purple-600 transition-opacity" oninput="onSliderInput(this.value)">
+            <span id="simulation-time-display" class="font-outfit font-black text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded shrink-0 min-w-[34px] text-center text-[10px]">12:00</span>
+          </div>
+        </div>
+        <!-- 展開フィルター -->
+        <div id="filter-content" class="filter-transition max-h-0 overflow-hidden bg-slate-50/50">
+          <div class="p-2.5 pt-1 border-t border-slate-100 flex flex-col gap-2 max-h-64 overflow-y-auto custom-scrollbar" id="filter-categories-container"></div>
+        </div>
+      </div>
+      
+      <!-- タイムライン表 (w-max min-w-full により赤線が右端まで完全に貫通) -->
+      <div class="flex-1 min-h-0 relative bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+        <div class="w-full h-full overflow-x-auto overflow-y-auto custom-scrollbar scroll-smooth" id="timeline-scroll-container">
+          <div class="flex w-max min-w-full relative" id="timeline-grid" style="height: 1850px;">
+            <div class="w-10 flex-none border-r border-slate-200 sticky left-0 text-center select-none z-timeline-axis" id="time-axis"></div>
+            <div class="flex flex-1 relative w-max min-w-full" id="stage-columns"></div>
+            <div id="current-time-line" class="absolute left-0 right-0 border-t border-rose-500 pointer-events-none flex items-center transition-all duration-300 z-timeline-now" style="top: 300px;"><span class="bg-rose-500 text-white font-bold font-outfit text-[8px] py-0.5 rounded-r shadow sticky left-0 w-10 text-center shrink-0">NOW</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ▼ B. 出演者リスト ▼ -->
+    <div id="view-list" class="hidden flex-1 min-h-0 flex flex-col gap-2">
+      <div class="bg-white p-2 rounded-xl shadow-sm border border-slate-100 flex-none flex items-center gap-2">
+        <div class="relative flex-1">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+          <input type="text" id="artist-search" oninput="onArtistSearch(this.value)" placeholder="アーティスト名、またはヨミガナで検索..." class="w-full bg-slate-50 pl-8 pr-8 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-purple-500">
+          <button id="search-clear-btn" onclick="clearArtistSearch()" class="hidden absolute right-2.5 top-2 text-slate-400 hover:text-slate-600"><i class="fa-solid fa-circle-xmark text-sm"></i></button>
+        </div>
+      </div>
+      <div id="artist-directory" class="flex-1 overflow-y-auto custom-scrollbar bg-white rounded-xl border border-slate-100 p-3 pb-12 space-y-4"></div>
+    </div>
+
+    <!-- ▼ C. マイタイテ ▼ -->
+    <div id="view-my" class="hidden flex-1 min-h-0 flex flex-col gap-2">
+      <div class="flex-none flex items-center justify-between bg-white px-3 py-1.5 rounded-xl border border-slate-100 shadow-sm text-xs">
+        <div class="flex items-center gap-1 text-slate-500 font-bold select-none"><i class="fa-solid fa-star text-amber-500"></i><span>マイタイムテーブル</span></div>
+        <div class="bg-slate-100 p-0.5 rounded-lg flex text-[10px] font-bold select-none">
+          <button id="my-style-list-btn" onclick="changeMyStyleView('list')" class="px-2.5 py-1 rounded-md bg-white text-purple-600 shadow-xs transition-all">リスト</button>
+          <button id="my-style-grid-btn" onclick="changeMyStyleView('grid')" class="px-2.5 py-1 rounded-md text-slate-500 hover:text-purple-600 transition-all">タイテ(表)</button>
+        </div>
+      </div>
+      <div id="my-empty-state" class="flex-1 flex flex-col items-center justify-center text-slate-400 py-10"><i class="fa-solid fa-calendar-plus text-5xl mb-2 text-slate-200"></i><p class="text-xs font-bold">まだ選択された出番がありません</p></div>
+      <div id="my-schedule-list" class="flex-1 overflow-y-auto custom-scrollbar space-y-2 pb-12"></div>
+      
+      <div id="my-schedule-grid-container" class="hidden flex-1 min-h-0 relative bg-white rounded-xl border border-slate-100 overflow-hidden">
+        <div class="w-full h-full overflow-x-auto overflow-y-auto custom-scrollbar scroll-smooth" id="my-grid-scroll-container">
+          <div class="flex w-max min-w-full relative" id="my-timeline-grid" style="height: 1850px;">
+            <div class="w-10 flex-none border-r border-slate-200 sticky left-0 text-center select-none z-timeline-axis" id="my-time-axis"></div>
+            <div class="flex flex-1 relative w-max min-w-full" id="my-stage-columns"></div>
+            <div id="my-current-time-line" class="absolute left-0 right-0 border-t border-rose-500 pointer-events-none flex items-center transition-all duration-300 z-timeline-now" style="top: 300px;"><span class="bg-rose-500 text-white font-bold font-outfit text-[8px] py-0.5 rounded-r shadow sticky left-0 w-10 text-center shrink-0">NOW</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- モーダル & トースト -->
+  <div id="artist-detail-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[100] flex items-center justify-center p-4 transition-all duration-200" onclick="closeArtistDetailModal()">
+    <div class="bg-white w-full max-w-sm rounded-2xl shadow-2xl overflow-hidden transform scale-95 transition-all duration-200 flex flex-col max-h-[80vh]" onclick="event.stopPropagation()">
+      <div class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-3 flex items-center justify-between shrink-0">
+        <div><span class="text-[8px] font-bold bg-white/20 px-1.5 py-0.5 rounded uppercase tracking-wider font-outfit">Artist Schedule</span><h2 id="modal-artist-name" class="text-xs font-black mt-0.5 truncate">アーティスト名</h2></div>
+        <button onclick="closeArtistDetailModal()" class="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 active:scale-90 transition-all"><i class="fa-solid fa-xmark text-xs"></i></button>
+      </div>
+      <div class="p-3 overflow-y-auto custom-scrollbar flex-1 space-y-2" id="modal-schedule-list"></div>
+      <div class="bg-slate-50 p-2.5 border-t border-slate-100 flex items-center justify-between text-[9px] text-slate-400 shrink-0 select-none">
+        <span>タップで 未選択→★→★★ が切り替わります</span><button onclick="closeArtistDetailModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded-lg active:scale-95 transition-all">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="custom-alert" class="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 bg-slate-900/95 text-white p-2.5 rounded-lg shadow-xl z-[100] transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none flex items-center justify-between gap-3">
+    <div class="flex items-center gap-2"><i class="fa-solid fa-circle-info text-purple-400 text-sm"></i><span class="text-[11px]" id="alert-text">保存されました</span></div>
+    <button onclick="dismissAlert()" class="text-slate-400 hover:text-white text-[10px] font-bold">閉じる</button>
+  </div>
+
+
+  <!-- =========================================================
+       ロジック部 (出番ごとの選択 ＆ 完全int配列処理)
+  ========================================================== -->
+  <script>
+    // --- 1. グローバル設定・状態 ---
+    const startHour = 10, endHour = 22, pxPerMinute = 2.4, headerHeight = 22; 
+    
+    // システム内部では完全にこれらの配列やMapのみでデータを持ち回ります
+    let stageMaster = [];  // [stage_id: int, stage_name: str]
+    let artistMaster = []; // [group_id: int, group_name: str, yomi: str]
+    let dataDay1 = [];     // [stage_id, [[group_id, sh, sm, eh, em], ...]]
+    let dataDay2 = [];
+    let stages = [];       // UI装飾用の加工済み配列
+    
+    let currentDay = 1, currentSchedules = [], selectedActMap = new Map();
+    let activeTab = "all", visibleStageIds = new Set();
+    let simulationMinutes = 600, isFilterOpen = false, isRealtimeMode = false, realtimeTimer = null;
+    let artistSearchQuery = "", myScheduleStyle = "list", alertTimeout;
+
+    // --- 2. ユーティリティ ---
+    function formatTime(h, m) { return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`; }
+    function saveData() { try { localStorage.setItem("gg_fes_acts", JSON.stringify(Object.fromEntries(selectedActMap))); } catch(e) {} }
+
+    // --- 3. アプリ初期化 ---
+    window.onload = function() {
+      initData(); // int配列群をデコードしてメモリに展開
+      
+      currentSchedules = getFlatActs(dataDay1); 
+      visibleStageIds = new Set(stages.filter(s => s.category === "live").map(s => s.id));
+      
+      try {
+        const saved = JSON.parse(localStorage.getItem("gg_fes_acts"));
+        if (saved) Object.entries(saved).forEach(([k, v]) => selectedActMap.set(k, v));
+      } catch(e) {}
+
+      initFilterHTML();
+      renderStageFilters();
+      createTimeAxis("time-axis", true);
+      renderGrid();
+      updateCounter();
+      updateSimulationTime(720);
+    };
+
+    // --- 4. UI切り替え系アクション ---
+    function switchDay(day) {
+      currentDay = day; 
+      currentSchedules = getFlatActs(day === 1 ? dataDay1 : dataDay2);
+      document.getElementById("day1-btn").className = `px-2 py-0.5 rounded text-[10px] font-bold transition-all ${day === 1 ? 'bg-white text-purple-600 shadow-sm' : 'text-white hover:bg-white/10'}`;
+      document.getElementById("day2-btn").className = `px-2 py-0.5 rounded text-[10px] font-bold transition-all ${day === 2 ? 'bg-white text-purple-600 shadow-sm' : 'text-white hover:bg-white/10'}`;
+      if(activeTab === 'all') renderGrid(); else if(activeTab === 'list') renderArtistDirectory(); else renderMySchedule();
+    }
+
+    function switchTab(tab) {
+      activeTab = tab;
+      ["all", "list", "my"].forEach(t => {
+        document.getElementById(`tab-${t}`).className = `flex-1 py-2 text-center font-black text-xs border-b-2 transition-all flex items-center justify-center gap-1 ${t === tab ? 'border-purple-600 text-purple-600' : 'border-transparent text-slate-500'}`;
+        document.getElementById(`view-${t}`).style.display = t === tab ? 'flex' : 'none';
+      });
+      if (tab === "all") { renderGrid(); if (isRealtimeMode) setTimeout(scrollToCurrentTime, 100); }
+      else if (tab === "list") renderArtistDirectory();
+      else if (tab === "my") { renderMySchedule(); if (myScheduleStyle === "grid" && isRealtimeMode) setTimeout(scrollToMyGridCurrentTime, 100); }
+    }
+
+    function changeMyStyleView(style) {
+      myScheduleStyle = style; const isList = (style === "list");
+      document.getElementById("my-style-list-btn").className = `px-2.5 py-1 rounded-md transition-all ${isList ? 'bg-white text-purple-600 shadow-xs' : 'text-slate-500 hover:text-purple-600'}`;
+      document.getElementById("my-style-grid-btn").className = `px-2.5 py-1 rounded-md transition-all ${!isList ? 'bg-white text-purple-600 shadow-xs' : 'text-slate-500 hover:text-purple-600'}`;
+      document.getElementById("my-schedule-list").classList.toggle("hidden", !isList);
+      document.getElementById("my-schedule-grid-container").classList.toggle("hidden", isList);
+      if (!isList) renderMyGrid();
+    }
+
+    function updateCounter() { document.getElementById("check-counter").innerText = `選択中: ${selectedActMap.size}枠`; }
+
+    function showToast(text) {
+      const box = document.getElementById("custom-alert"); document.getElementById("alert-text").innerText = text;
+      box.classList.remove("translate-y-24", "opacity-0"); box.classList.add("translate-y-0", "opacity-100");
+      clearTimeout(alertTimeout); alertTimeout = setTimeout(() => dismissAlert(), 2500);
+    }
+    function dismissAlert() { document.getElementById("custom-alert").classList.add("translate-y-24", "opacity-0"); }
+
+    // --- 5. フィルター操作 ---
+    function toggleFilterAccordion() {
+      isFilterOpen = !isFilterOpen;
+      document.getElementById("filter-content").style.maxHeight = isFilterOpen ? "300px" : "0px";
+      document.getElementById("filter-chevron").classList.toggle("rotate-180", isFilterOpen);
+    }
+
+    function initFilterHTML() {
+      const categories = [ { id: 'live', label: '🎤 ライブステージ' }, { id: 'tokuten', label: '🤝 特典会エリア' }, { id: 'ennichi', label: '🏮 縁日エリア' } ];
+      let html = '';
+      categories.forEach(cat => {
+        html += `<div><div class="flex items-center justify-between text-[10px] text-slate-500 font-black mb-1 select-none"><span>${cat.label}</span><div class="flex gap-2"><button onclick="toggleCategoryStages('${cat.id}', true)" class="text-purple-600 font-bold hover:underline">ON</button><button onclick="toggleCategoryStages('${cat.id}', false)" class="text-purple-600 font-bold hover:underline">OFF</button></div></div><div class="flex flex-wrap gap-1 ${cat.id !== 'live' ? 'p-1 bg-slate-100/50 rounded-lg' : ''}" id="${cat.id}-stage-filters"></div></div><div class="h-px bg-slate-200 last:hidden"></div>`;
+      });
+      document.getElementById('filter-categories-container').innerHTML = html;
+    }
+
+    function renderStageFilters() {
+      const containers = { live: document.getElementById("live-stage-filters"), tokuten: document.getElementById("tokuten-stage-filters"), ennichi: document.getElementById("ennichi-stage-filters") };
+      Object.values(containers).forEach(c => c.innerHTML = "");
+      stages.forEach(s => {
+        const isVisible = visibleStageIds.has(s.id);
+        const btn = document.createElement("button");
+        btn.onclick = () => { if(isVisible && visibleStageIds.size > 1) visibleStageIds.delete(s.id); else visibleStageIds.add(s.id); renderStageFilters(); renderGrid(); };
+        btn.className = `px-2 py-0.5 rounded-full text-[9px] font-black transition-all flex items-center gap-1 shrink-0 ${isVisible ? s.accent+' text-white shadow-sm' : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-200'}`;
+        btn.innerHTML = `<span class="w-1 h-1 rounded-full ${isVisible ? 'bg-white' : s.accent}"></span>${s.name.replace(" STAGE","").replace("特典会 ","").replace("縁日 ","")}`;
+        if(containers[s.category]) containers[s.category].appendChild(btn);
+      });
+      document.getElementById("filter-summary-count").innerText = `(${visibleStageIds.size}/${stages.length} エリア選択中)`;
+    }
+
+    function toggleCategoryStages(cat, force) {
+      stages.filter(s => s.category === cat).forEach(s => { if (force) visibleStageIds.add(s.id); else if (visibleStageIds.size > 1) visibleStageIds.delete(s.id); });
+      renderStageFilters(); renderGrid();
+    }
+
+    // --- 6. 出番単位の選択 ＆ モーダル ---
+    function toggleActSelect(actId) {
+      const allActs = getFlatActs(dataDay1).concat(getFlatActs(dataDay2));
+      const act = allActs.find(a => a.id === actId);
+      if (!act) return;
+      
+      const level = selectedActMap.get(actId) || 0;
+      const name = artistMaster.find(m => m[0] === act.groupId)[1];
+      const timeStr = formatTime(act.sh, act.sm);
+
+      if (level === 0) { selectedActMap.set(actId, 1); showToast(`「${name} (${timeStr})」を追加しました`); }
+      else if (level === 1) { selectedActMap.set(actId, 2); showToast(`「${name} (${timeStr})」を【最優先(★★)】に！`); }
+      else { selectedActMap.delete(actId); showToast(`「${name} (${timeStr})」を外しました`); }
+      
+      saveData(); updateCounter(); 
+      if (activeTab === 'all') renderGrid(); 
+      else if (activeTab === 'list') renderArtistDirectory(); 
+      else renderMySchedule();
+    }
+
+    function showArtistDetailModal(groupId) {
+      const name = artistMaster.find(m => m[0] === groupId)[1];
+      document.getElementById("modal-artist-name").innerText = name;
+      renderModalScheduleList(groupId);
+      const modal = document.getElementById("artist-detail-modal");
+      modal.classList.remove("hidden");
+      setTimeout(() => { modal.firstElementChild.classList.remove("scale-95"); modal.firstElementChild.classList.add("scale-100"); }, 10);
+    }
+
+    function closeArtistDetailModal() {
+      const modal = document.getElementById("artist-detail-modal");
+      modal.firstElementChild.classList.remove("scale-100"); modal.firstElementChild.classList.add("scale-95");
+      setTimeout(() => { modal.classList.add("hidden"); }, 150);
+    }
+
+    function renderModalScheduleList(groupId) {
+      const listContainer = document.getElementById("modal-schedule-list");
+      listContainer.innerHTML = "";
+      
+      const allActs = getFlatActs(dataDay1).concat(getFlatActs(dataDay2)).filter(a => a.groupId === groupId).sort((a, b) => a.startMin - b.startMin);
+
+      allActs.forEach(act => {
+        const stage = stages.find(s => s.id === act.stageId);
+        const level = selectedActMap.get(act.id) || 0;
+        const item = document.createElement("div");
+        item.className = `p-3 rounded-xl border flex items-center justify-between gap-3 transition-all cursor-pointer ${level > 0 ? 'bg-amber-50 border-amber-300' : 'bg-slate-50 border-slate-100 hover:bg-slate-100/80'}`;
+        item.onclick = () => { toggleActSelect(act.id); renderModalScheduleList(groupId); };
+
+        const icon = stage.category === "live" ? "🎤" : (stage.category === "tokuten" ? "🤝" : "🏮");
+        const stars = level === 2 ? `<i class="fa-solid fa-star text-xs"></i><i class="fa-solid fa-star text-xs ml-px"></i>` : (level === 1 ? `<i class="fa-solid fa-star text-xs"></i>` : `<span class="w-2 h-2 rounded-full border border-current bg-transparent shrink-0"></span>`);
+        const btnClass = level === 2 ? "bg-amber-400 text-white border-amber-500 shadow-sm px-2.5" : (level === 1 ? "bg-amber-200 text-amber-600 border-amber-300 w-8" : "bg-white text-slate-300 border-slate-200 w-8");
+        const dayStr = act.id.startsWith('d1') ? '[23日]' : '[24日]';
+
+        item.innerHTML = `
+          <div class="flex items-center gap-3 min-w-0 flex-1 pointer-events-none">
+            <div class="text-center shrink-0">
+              <div class="font-outfit font-black text-xs text-slate-800">${formatTime(act.sh, act.sm)}</div>
+              <div class="text-[9px] text-slate-400">〜 ${formatTime(act.eh, act.em)}</div>
+            </div>
+            <div class="h-6 w-px bg-slate-200"></div>
+            <div class="min-w-0 flex-1">
+              <div class="text-[8px] font-bold text-slate-400">${dayStr}</div>
+              <span class="text-[8px] font-black px-1.5 py-0.5 rounded ${stage.accent} text-white uppercase">${icon} ${stage.name.replace(" STAGE", "")}</span>
+            </div>
+          </div>
+          <div class="h-8 min-w-[32px] rounded-full border flex items-center justify-center transition-all shrink-0 pointer-events-none ${btnClass}">
+            <div class="flex items-center justify-center">${stars}</div>
+          </div>
+        `;
+        listContainer.appendChild(item);
+      });
+    }
+
+    // --- 7. 描画共通関数・アルゴリズム ---
+    function getFlatActs(dataArray) {
+      const flat = [];
+      const prefix = dataArray === dataDay1 ? 'd1' : 'd2';
+      dataArray.forEach(stageData => {
+        const stageId = stageData[0];
+        stageData[1].forEach(act => {
+          const [groupId, sh, sm, eh, em] = act;
+          flat.push({
+            id: `${prefix}_${stageId}_${groupId}_${sh}${sm}`, // 画面切り替え用のユニークID
+            stageId, groupId, sh, sm, eh, em,
+            startMin: (sh * 60 + sm) - (startHour * 60),
+            endMin: (eh * 60 + em) - (startHour * 60)
+          });
+        });
+      });
+      return flat;
+    }
+
+    function createTimeAxis(containerId, hasHeader) {
+      const axis = document.getElementById(containerId); axis.innerHTML = "";
+      const spacer = document.createElement("div"); 
+      spacer.className = `border-b border-slate-200 select-none sticky top-0 ${hasHeader ? 'sticky-time-header' : 'z-timeline-now'}`; 
+      spacer.style.height = hasHeader ? `${headerHeight}px` : "0px"; 
+      spacer.innerText = hasHeader ? "TIME" : ""; 
+      axis.appendChild(spacer);
+      
+      for (let m = 0; m <= (endHour - startHour) * 60; m += 30) {
+        const tick = document.createElement("div"); 
+        tick.className = "absolute right-1 text-slate-400 font-outfit text-[9.5px] font-black select-none pointer-events-none"; 
+        tick.style.top = `${m * pxPerMinute + (hasHeader ? headerHeight : 0)}px`; 
+        tick.innerText = `${String(startHour + Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`; 
+        axis.appendChild(tick);
+      }
+    }
+
+    function setupCardEvents(card, actId, groupId, isMyGrid) {
+      let timer = null, hold = false, startX = 0, startY = 0;
+      card.onpointerdown = e => { 
+        if(e.button !== 0 && e.pointerType === 'mouse') return; 
+        hold = false; startX = e.clientX; startY = e.clientY; 
+        timer = setTimeout(() => { hold = true; showArtistDetailModal(groupId); }, 500); 
+      };
+      card.onpointermove = e => { if(timer && Math.hypot(e.clientX - startX, e.clientY - startY) > 10) { clearTimeout(timer); timer = null; } };
+      card.onpointerup = () => { if(timer) { clearTimeout(timer); timer = null; } if(!hold) { toggleActSelect(actId); if(isMyGrid) renderMyGrid(); } };
+      card.onpointercancel = () => { if(timer) { clearTimeout(timer); timer = null; } };
+    }
+
+    // 動的重複回避パッキング (星2を優先・列数最小化)
+    function packActsAlgorithm(acts) {
+      const pack = (list) => {
+        const columns = [];
+        list.forEach(act => {
+          let placed = false;
+          for (let col of columns) {
+            if (!col.some(placedAct => act.startMin < placedAct.endMin && act.endMin > placedAct.startMin)) { col.push(act); placed = true; break; }
+          }
+          if (!placed) columns.push([act]);
+        });
+        return columns;
+      };
+      const sorted = [...acts].sort((a, b) => a.startMin - b.startMin);
+      const colsA = pack(sorted);
+      
+      const highPriority = sorted.filter(e => selectedActMap.get(e.id) === 2);
+      const lowPriority = sorted.filter(e => selectedActMap.get(e.id) === 1);
+      const colsB = pack([...highPriority, ...lowPriority]);
+      
+      return colsB.length <= colsA.length ? colsB : colsA;
+    }
+
+    // --- 8. 各画面の描画処理 ---
+    function renderGrid() {
+      const container = document.getElementById("stage-columns"); container.innerHTML = "";
+      const activeStages = stages.filter(s => visibleStageIds.has(s.id));
+      const totalMinutes = (endHour - startHour) * 60;
+      document.getElementById("timeline-grid").style.height = `${totalMinutes * pxPerMinute + headerHeight}px`;
+      
+      const colWidthPercent = 100 / activeStages.length;
+
+      activeStages.forEach(stage => {
+        const col = document.createElement("div"); 
+        col.className = `flex-1 relative border-r border-slate-200/80 min-w-[125px] ${stage.bg}/10`; 
+        col.style.width = `${colWidthPercent}%`;
+
+        const icon = stage.category === "live" ? "🎤" : (stage.category === "tokuten" ? "🤝" : "🏮");
+        const header = document.createElement("div");
+        header.className = `h-[22px] sticky top-0 stage-header-sticky ${stage.accent} text-white flex items-center justify-center font-black px-1 shadow-sm select-none border-b border-black/10`;
+        header.innerHTML = `<div class="text-[9.5px] font-black tracking-tight leading-none">${icon} ${stage.name.replace(" STAGE", "")}</div>`;
+        col.appendChild(header);
+
+        for(let m = 30; m < totalMinutes; m += 30){ 
+          const line = document.createElement("div"); line.className = "absolute left-0 right-0 border-t border-slate-100 pointer-events-none"; line.style.top = `${m * pxPerMinute + headerHeight}px`; col.appendChild(line); 
+        }
+        
+        currentSchedules.filter(a => a.stageId === stage.id).forEach(act => {
+          const duration = act.endMin - act.startMin; 
+          const level = selectedActMap.get(act.id) || 0;
+          const name = artistMaster.find(m => m[0] === act.groupId)[1];
+          
+          const card = document.createElement("div");
+          card.className = `absolute left-1 right-1 p-1 rounded border flex flex-col justify-between transition-all duration-200 cursor-pointer select-none overflow-hidden hover:brightness-95 z-10 ${level === 2 ? 'bg-amber-100 border-amber-500 ring-2 ring-amber-500/80 shadow-md' : (level === 1 ? 'bg-amber-50 border-amber-400 ring-1 ring-amber-400/50 shadow-sm' : `bg-white ${stage.border} hover:shadow-xs`)}`;
+          card.style.top = `${act.startMin * pxPerMinute + headerHeight + 2}px`; 
+          card.style.height = `${duration * pxPerMinute - 4}px`;
+          
+          setupCardEvents(card, act.id, act.groupId, false);
+          
+          const textColor = level > 0 ? "text-amber-950 font-bold" : "text-slate-800"; 
+          const timeColor = level > 0 ? "text-amber-700" : "text-slate-400";
+          const starsHtml = level === 2 ? `<i class="fa-solid fa-star text-amber-500 text-[9px] mt-0.5"></i><i class="fa-solid fa-star text-amber-500 text-[9px] mt-0.5 ml-px"></i>` : (level === 1 ? `<i class="fa-solid fa-star text-amber-500 text-[9px] mt-0.5"></i>` : "");
+          const starsSmall = level === 2 ? `<i class="fa-solid fa-star text-amber-500 text-[8px] shrink-0"></i><i class="fa-solid fa-star text-amber-500 text-[8px] shrink-0 ml-px"></i>` : (level === 1 ? `<i class="fa-solid fa-star text-amber-500 text-[8px] shrink-0"></i>` : "");
+
+          if (duration >= 20) {
+            card.innerHTML = `<div class="flex items-start justify-between"><span class="text-[8px] font-outfit font-bold ${timeColor}">${formatTime(act.sh, act.sm)}-${formatTime(act.eh, act.em)}</span><div class="flex shrink-0">${starsHtml}</div></div><div class="text-[10px] tracking-tight leading-tight line-clamp-2 mt-0.5 ${textColor}">${name}</div>`;
+          } else {
+            card.innerHTML = `<div class="flex items-center justify-between h-full gap-1"><div class="text-[9.5px] tracking-tight truncate leading-none ${textColor} flex items-center gap-0.5"><div class="flex shrink-0">${starsSmall}</div><span class="truncate">${name}</span></div><div class="flex flex-col text-[7.5px] leading-none font-outfit font-bold shrink-0 ${timeColor} text-right"><span>${formatTime(act.sh, act.sm)}</span><span class="mt-0.5">${formatTime(act.eh, act.em)}</span></div></div>`;
+          }
+          col.appendChild(card);
+        });
+        container.appendChild(col);
+      });
+    }
+
+    function renderMyGrid() {
+      const container = document.getElementById("my-stage-columns"); container.innerHTML = "";
+      const myActs = currentSchedules.filter(a => selectedActMap.has(a.id));
+      
+      if (!myActs.length) { 
+        document.getElementById("my-empty-state").classList.remove("hidden"); 
+        document.getElementById("my-schedule-grid-container").classList.add("hidden"); 
+        return; 
+      }
+      
+      createTimeAxis("my-time-axis", false);
+      const packedData = packActsAlgorithm(myActs);
+      const totalMinutes = (endHour - startHour) * 60;
+      
+      packedData.forEach(columnActs => {
+        const col = document.createElement("div"); 
+        col.className = "flex-1 relative border-r border-slate-200/80 min-w-[125px] bg-slate-50/10"; 
+        col.style.width = `${100 / packedData.length}%`;
+        
+        for (let m = 30; m < totalMinutes; m += 30) { 
+          const line = document.createElement("div"); line.className = "absolute left-0 right-0 border-t border-slate-100 pointer-events-none"; line.style.top = `${m * pxPerMinute}px`; col.appendChild(line); 
+        }
+        
+        columnActs.forEach(act => {
+          const duration = act.endMin - act.startMin; 
+          const stage = stages.find(s => s.id === act.stageId); 
+          const level = selectedActMap.get(act.id);
+          const name = artistMaster.find(m => m[0] === act.groupId)[1];
+          
+          const card = document.createElement("div");
+          card.className = `absolute left-1 right-1 p-1 rounded border flex flex-col justify-between transition-all duration-200 cursor-pointer select-none overflow-hidden hover:brightness-95 z-10 ${stage.bg} ${stage.border} ${level === 2 ? 'ring-2 ring-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.6)]' : 'ring-1 ring-amber-400 shadow-[0_0_3px_rgba(245,158,11,0.3)]'}`;
+          card.style.top = `${act.startMin * pxPerMinute + 2}px`; 
+          card.style.height = `${duration * pxPerMinute - 4}px`;
+          
+          setupCardEvents(card, act.id, act.groupId, true);
+          
+          const icon = stage.category === "live" ? "🎤" : (stage.category === "tokuten" ? "🤝" : "🏮");
+          const badge = `<span class="text-[7px] font-bold px-1 rounded bg-white/70 border border-slate-200/20 ${stage.text} uppercase shrink-0 scale-75 origin-left">${icon}${stage.name.replace(" STAGE", "")}</span>`;
+          const starsHtml = level === 2 ? `<i class="fa-solid fa-star text-amber-500 text-[9px]"></i><i class="fa-solid fa-star text-amber-500 text-[9px] ml-px"></i>` : `<i class="fa-solid fa-star text-amber-500 text-[9px]"></i>`;
+          const starsSmall = level === 2 ? `<i class="fa-solid fa-star text-amber-500 text-[8px] shrink-0"></i><i class="fa-solid fa-star text-amber-500 text-[8px] shrink-0 ml-px"></i>` : `<i class="fa-solid fa-star text-amber-500 text-[8px] shrink-0"></i>`;
+          
+          if (duration >= 20) {
+            card.innerHTML = `<div class="flex items-start justify-between min-w-0"><span class="text-[7.5px] font-outfit font-black ${stage.text} opacity-80">${formatTime(act.sh, act.sm)}-${formatTime(act.eh, act.em)}</span><span class="text-[7px] font-black px-1 rounded bg-white/70 border border-slate-200/20 ${stage.text} uppercase scale-85 origin-right shrink-0">${icon}${stage.name.replace(" STAGE", "")}</span></div><div class="text-[9.5px] tracking-tight leading-tight line-clamp-2 mt-0.5 ${stage.text} font-black"><div class="inline-flex mr-0.5">${starsHtml}</div>${name}</div>`;
+          } else {
+            card.innerHTML = `<div class="flex items-center justify-between h-full gap-0.5"><div class="text-[9px] tracking-tight truncate leading-none ${stage.text} font-black flex items-center gap-0.5 min-w-0 flex-1">${badge}<div class="flex shrink-0">${starsSmall}</div><span class="truncate">${name}</span></div><div class="flex flex-col text-[7px] leading-none font-outfit font-bold ${stage.text} opacity-80 shrink-0 text-right"><span>${formatTime(act.sh, act.sm)}</span><span>${formatTime(act.eh, act.em)}</span></div></div>`;
+          }
+          col.appendChild(card);
+        });
+        container.appendChild(col);
+      });
+      
+      const nowLine = document.getElementById("my-current-time-line"); 
+      if (nowLine) { 
+        nowLine.style.top = `${(simulationMinutes - (startHour * 60)) * pxPerMinute}px`; 
+        nowLine.firstElementChild.style.left = "0px"; 
+      }
+    }
+
+    function renderMySchedule() {
+      const container = document.getElementById("my-schedule-list"), emptyState = document.getElementById("my-empty-state"); 
+      container.innerHTML = "";
+      
+      if (!selectedActMap.size) { 
+        emptyState.classList.remove("hidden"); document.getElementById("my-schedule-grid-container").classList.add("hidden"); return; 
+      }
+      emptyState.classList.add("hidden");
+      
+      if (myScheduleStyle === "grid") { 
+        document.getElementById("my-schedule-grid-container").classList.remove("hidden"); container.classList.add("hidden"); renderMyGrid(); return; 
+      }
+      document.getElementById("my-schedule-grid-container").classList.add("hidden"); container.classList.remove("hidden");
+      
+      const myActs = currentSchedules.filter(a => selectedActMap.has(a.id)).sort((a, b) => a.startMin - b.startMin);
+      
+      myActs.forEach((act, i) => {
+        const stage = stages.find(x => x.id === act.stageId); 
+        const level = selectedActMap.get(act.id); 
+        const name = artistMaster.find(m => m[0] === act.groupId)[1];
+        const isConflict = i > 0 && myActs[i-1].endMin > act.startMin;
+        const icon = stage.category === "live" ? "🎤" : (stage.category === "tokuten" ? "🤝" : "🏮");
+        const starsHtml = level === 2 ? `<div class="flex gap-0.5"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>` : `<i class="fa-solid fa-star"></i>`;
+        const btnClass = level === 2 ? "bg-amber-100 text-amber-500 border border-amber-300" : "bg-slate-50 text-amber-400 border border-slate-200 hover:bg-slate-100";
+
+        const div = document.createElement("div"); 
+        div.className = "bg-white rounded-xl p-3 border border-slate-100 shadow-xs flex items-center justify-between gap-3 transition-all hover:shadow-sm";
+        div.innerHTML = `
+          <div class="flex items-center gap-3 flex-1 min-w-0">
+            <div class="text-center shrink-0">
+              <div class="font-outfit font-black text-xs text-slate-900">${formatTime(act.sh, act.sm)}</div>
+              <div class="text-[9px] text-slate-400">〜 ${formatTime(act.eh, act.em)}</div>
+            </div>
+            <div class="h-6 w-1 rounded-full ${stage.accent}"></div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <span class="text-[8px] font-black px-1.5 py-0.5 rounded ${stage.accent} text-white uppercase">${icon} ${stage.name.replace(" STAGE", "")}</span>
+                ${isConflict ? '<span class="text-[8px] bg-rose-50 text-rose-600 font-bold px-1.5 py-0.5 rounded border border-rose-100"><i class="fa-solid fa-triangle-exclamation mr-0.5"></i>重複</span>' : ''}
+              </div>
+              <h4 class="font-bold text-xs text-slate-900 mt-0.5 truncate">${name}</h4>
+            </div>
+          </div>
+          <button onclick="toggleActSelect('${act.id}')" class="h-8 min-w-[32px] px-2.5 rounded-full flex items-center justify-center transition-colors text-[10px] ${btnClass}">${starsHtml}</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function renderArtistDirectory() {
+      const container = document.getElementById("artist-directory"); container.innerHTML = "";
+      const query = artistSearchQuery.trim().toLowerCase();
+      
+      const filteredMasters = artistMaster.filter(m => !query || m[1].toLowerCase().includes(query) || m[2].includes(query));
+      if (!filteredMasters.length) { 
+        container.innerHTML = `<div class="py-16 text-center text-slate-400"><i class="fa-solid fa-magnifying-glass text-4xl mb-2 text-slate-200"></i><p class="text-xs font-bold">一致する出演者がいません</p></div>`; 
+        return; 
+      }
+
+      const groups = { "あ行":[], "か行":[], "さ行":[], "た行":[], "な行":[], "は行":[], "ま行":[], "や行":[], "ら行":[], "わ行":[] };
+      for (let i = 65; i <= 90; i++) groups[String.fromCharCode(i)] = [];
+      groups["その他"] = [];
+
+      filteredMasters.forEach(m => { 
+        const key = getYomiGroup(m[1], m[2]); 
+        if(groups[key]) groups[key].push(m); else groups["その他"].push(m); 
+      });
+
+      Object.keys(groups).forEach(key => {
+        if (!groups[key].length) return;
+        groups[key].sort((a, b) => a[2].localeCompare(b[2], 'ja'));
+
+        const section = document.createElement("div"); section.className = "space-y-1.5";
+        section.innerHTML = `<div class="sticky top-0 bg-white/95 backdrop-blur-xs py-1 text-[11px] font-black text-purple-600 border-b border-purple-100 flex items-center justify-between z-10 select-none"><span>${key}</span><span class="text-[9px] text-slate-400 font-normal">計 ${groups[key].length} 組</span></div>`;
+        const wrapper = document.createElement("div"); wrapper.className = "divide-y divide-slate-100";
+        
+        groups[key].forEach(m => {
+          const groupId = m[0], name = m[1], yomi = m[2];
+          const acts = currentSchedules.filter(a => a.groupId === groupId).sort((a, b) => a.startMin - b.startMin);
+          if (!acts.length) return; 
+          
+          const levels = acts.map(a => selectedActMap.get(a.id) || 0);
+          const isAnyLevel2 = levels.some(x => x === 2);
+          const isAnySelected = levels.some(x => x > 0);
+          
+          const summaryHTML = acts.map(act => {
+            const stage = stages.find(s => s.id === act.stageId);
+            const level = selectedActMap.get(act.id) || 0;
+            const borderClass = level === 2 ? "border-amber-500 shadow-[0_0_4px_rgba(245,158,11,0.6)] ring-1 ring-amber-500/60 font-extrabold" : (level === 1 ? "border-amber-400 shadow-[0_0_2px_rgba(245,158,11,0.3)] ring-1 ring-amber-400/30 font-bold" : "border-slate-200/50 font-bold");
+            const indicator = level === 2 ? `<div class="flex shrink-0"><i class="fa-solid fa-star text-amber-500 text-[8px] animate-pulse"></i><i class="fa-solid fa-star text-amber-500 text-[8px] animate-pulse ml-px"></i></div>` : (level === 1 ? `<i class="fa-solid fa-star text-amber-500 text-[8.5px]"></i>` : `<span class="w-1.5 h-1.5 rounded-full border border-current bg-transparent shrink-0"></span>`);
+            const icon = stage.category === "live" ? "🎤" : (stage.category === "tokuten" ? "🤝" : "🏮");
+            
+            // バッジタップでその出番だけトグル
+            return `<span onclick="event.stopPropagation(); toggleActSelect('${act.id}');" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8.5px] leading-none ${stage.bg} ${stage.text} border ${borderClass} mr-1 mt-1 shrink-0 cursor-pointer hover:brightness-95 transition-all">${indicator}<span>${icon}${stage.name.replace(" STAGE", "")}</span><span class="font-outfit">${formatTime(act.sh, act.sm)}〜${formatTime(act.eh, act.em)}</span></span>`;
+          }).join("");
+
+          const stars = isAnyLevel2 ? `<i class="fa-solid fa-star text-amber-500 shrink-0 text-[10px]"></i><i class="fa-solid fa-star text-amber-500 shrink-0 text-[10px] ml-px"></i>` : (isAnySelected ? `<i class="fa-solid fa-star text-amber-500 shrink-0 text-[10px]"></i>` : "");
+
+          const row = document.createElement("div"); row.className = "py-2 px-1 hover:bg-slate-50 flex items-center justify-between gap-3 cursor-pointer transition-colors active:bg-slate-100";
+          row.onclick = () => showArtistDetailModal(groupId);
+          row.innerHTML = `<div class="min-w-0 flex-1"><div class="text-[8px] text-slate-400 font-bold leading-none">${yomi}</div><div class="text-xs font-black text-slate-800 mt-0.5 truncate flex items-center gap-1.5">${stars !== "" ? `<div class="flex shrink-0">${stars}</div>` : ''}<span class="truncate">${name}</span></div><div class="flex flex-wrap items-center mt-0.5 max-w-full">${summaryHTML}</div></div><div class="flex items-center gap-1.5 text-right shrink-0"><span class="text-[9px] font-bold px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded-full">出番 ${acts.length} 回</span><i class="fa-solid fa-chevron-right text-[9px] text-slate-300"></i></div>`;
+          wrapper.appendChild(row);
+        });
+        if(wrapper.hasChildNodes()) { section.appendChild(wrapper); container.appendChild(section); }
+      });
+    }
+
+    function onArtistSearch(val) { artistSearchQuery = val; document.getElementById("search-clear-btn").classList.toggle("hidden", !val.trim()); renderArtistDirectory(); }
+    function clearArtistSearch() { document.getElementById("artist-search").value = ""; artistSearchQuery = ""; document.getElementById("search-clear-btn").classList.add("hidden"); renderArtistDirectory(); }
+
+    // --- 9. 時間同期系 ---
+    function updateSimulationTime(mins) {
+      simulationMinutes = Number(mins); const h = Math.floor(simulationMinutes / 60), m = simulationMinutes % 60;
+      document.getElementById("simulation-time-display").innerText = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      const offset = (simulationMinutes - (startHour * 60)) * pxPerMinute;
+      document.getElementById("current-time-line").style.top = `${offset + headerHeight}px`;
+      const myLine = document.getElementById("my-current-time-line"); if (myLine) myLine.style.top = `${offset}px`;
+    }
+
+    function onSliderInput(value) { if (isRealtimeMode) { disableRealtimeMode(); showToast("手動コントロールに戻りました"); } updateSimulationTime(value); }
+
+    function toggleRealtimeMode() {
+      isRealtimeMode = !isRealtimeMode;
+      const btn = document.getElementById("realtime-btn"), slider = document.getElementById("time-slider");
+      if (isRealtimeMode) {
+        btn.className = "px-1.5 py-0.5 rounded font-bold flex items-center gap-1 transition-all shrink-0 active:scale-95 text-[10px] bg-rose-500 text-white border border-rose-500 animate-pulse";
+        document.getElementById("realtime-btn-text").innerText = "同期中"; document.getElementById("realtime-icon").className = "fa-solid fa-circle-play text-white text-[9px]"; slider.classList.add("opacity-40");
+        syncWithRealTime(); realtimeTimer = setInterval(syncWithRealTime, 1000); showToast("現在時刻に自動同期しました");
+        setTimeout(() => { scrollToCurrentTime(); if(activeTab === "my" && myScheduleStyle === "grid") scrollToMyGridCurrentTime(); }, 200);
+      } else { disableRealtimeMode(); showToast("手動コントロールに戻りました"); }
+    }
+
+    function disableRealtimeMode() {
+      isRealtimeMode = false; if (realtimeTimer) { clearInterval(realtimeTimer); realtimeTimer = null; }
+      document.getElementById("realtime-btn").className = "px-1.5 py-0.5 rounded font-bold flex items-center gap-1 transition-all shrink-0 active:scale-95 text-[10px] bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100";
+      document.getElementById("realtime-btn-text").innerText = "現在時刻"; document.getElementById("realtime-icon").className = "fa-regular fa-clock text-slate-400 text-[10px]"; document.getElementById("time-slider").classList.remove("opacity-40");
+      document.getElementById("simulation-time-display").className = "font-outfit font-black bg-purple-50 text-purple-600 px-1.5 py-0.5 rounded shrink-0 min-w-[34px] text-center text-[10px]";
+    }
+
+    function syncWithRealTime() {
+      const now = new Date(); let tm = (now.getHours() * 60 + now.getMinutes()) - (startHour * 60); const maxL = (endHour - startHour) * 60 - 15; let isOut = false;
+      if (tm < 0) { tm = 0; isOut = true; } else if (tm > maxL) { tm = maxL; isOut = true; }
+      document.getElementById("time-slider").value = tm + (startHour * 60); updateSimulationTime(tm + (startHour * 60));
+      const display = document.getElementById("simulation-time-display");
+      display.className = `font-outfit font-black px-1.5 py-0.5 rounded shrink-0 min-w-[34px] text-center text-[10px] ${isOut ? 'bg-slate-100 text-slate-400' : 'bg-purple-50 text-purple-600'}`;
+    }
+
+    function scrollToCurrentTime() { const c = document.getElementById("timeline-scroll-container"), l = document.getElementById("current-time-line"); if(c && l) c.scrollTo({ top: l.offsetTop - (c.clientHeight / 2), behavior: 'smooth' }); }
+    function scrollToMyGridCurrentTime() { const c = document.getElementById("my-grid-scroll-container"), l = document.getElementById("my-current-time-line"); if(c && l) c.scrollTo({ top: l.offsetTop - (c.clientHeight / 2), behavior: 'smooth' }); }
+
+    // =========================================================
+    // データ定義部 (演者マスタ ＆ int型スケジュールデータ)
+    // =========================================================
+    function initData() {
+      // --- 演者マスタ (group_id, name, yomi) ---
+      artistMaster = [
+        [0, "RiNCENT #", "りんせんと"], [1, "α＋", "あるふぁぷらす"], [2, "キングサリ", "きんぐさり"], [3, "こみっきゅおん！", "こみっきゅおん"],
+        [4, "LINKL PLANET", "りんくるぷらねっと"], [5, "かすみ草とステラ", "かすみそうとすてら"], [6, "MEGAFON", "めがほん"], [7, "手羽先センセーション", "てばさきせんせーしょん"],
+        [8, "二丁目の魁カミングアウト", "にちょうめのかみんぐあうと"], [9, "アンスリューム", "あんすりゅーむ"], [10, "THE ORCHESTRA TOKYO", "じおーけすとらとーきょー"],
+        [11, "Ringwanderung", "りんぐわんでるんぐ"], [12, "夜光性アミューズ", "やこうせいあみゅーず"], [13, "UtaGe!", "うたげ"], [14, "Devil ANTHEM.", "でびるあんせむ"],
+        [15, "Merry BAD TUNE.", "めりーばっどちゅーん"], [16, "INUWASI", "いぬわし"], [17, "NEO JAPONISM", "ねおじゃぽにずむ"], [18, "Onephony", "わんふぉにー"],
+        [19, "高嶺のなでしこ", "たかねのなでしこ"], [20, "Rain Tree", "れいんつりー"], [21, "君と見るそら", "きみとみるそら"], [22, "Root mimi", "るーとみみ"],
+        [23, "AZATOY", "あざとい"], [24, "lll", "すりー"], [25, "マジカル・パンチライン", "まじかるぱんちらいん"], [26, "Peel the Apple", "ぴーるじあっぷる"],
+        [27, "フルコース", "ふるこーす"], [28, "びっくえんじぇる", "びっくえんじぇる"], [29, "myojou", "みょうじょう"], [30, "ちぃたん☆", "ちぃたん"],
+        [31, "山崎夢羽", "やまざきゆはね"], [32, "まねきケチャ", "まねきけちゃ"], [33, "RADiREVi", "らじれび"], [34, "Mirror,Mirror", "みらーみらー"],
+        [35, "AsteRythm", "あすてりずむ"], [36, "アオハルルートミー", "あおはるるーとみー"], [37, "スリジエ", "すりじえ"], [38, "サクヤコノハナ", "さくやこのはな"],
+        [39, "ルージュブック", "るーじゅぶっく"], [40, "Fille mimi", "ふぃーゆみみ"], [41, "AQA", "えーきゅーえー"], [42, "愛乙女☆DOLL", "らぶりーどーる"],
+        [43, "アブソプ", "あぶそぷ"], [44, "KAMAITACI", "かまいたち"], [45, "パラレルサイダー", "ぱられるさいだー"], [46, "metarium", "めたりうむ"],
+        [47, "あたまのなかは8ビット!?", "あたまのなかははちびっと"], [48, "なんキニ！", "なんきに"], [49, "ルルネージュ", "るるねーじゅ"], [50, "AQUA PLANET", "あくあぷらねっと"],
+        [51, "ちゃーむぽっしゅ", "ちゃーむぽっしゅ"], [52, "MyDresscode", "まいどれすこーど"], [53, "神様の言う通り", "かみさまのいうとおり"], [54, "SPRISE", "すぷらいず"],
+        [55, "STARRY NIGHT", "すたーりーないと"], [56, "EDEN", "えでん"], [57, "SAISON", "せぞん"], [58, "シャニムニ＝パレード", "しゃにむにぱれーど"],
+        [59, "すべての瞬間は君だった。", "すべてのしゅんかんはきみだった"], [60, "メイビー ME", "めいびーみー"], [61, "DREAMING MONSTER", "どりーみんぐもんすたー"], [62, "Jewel☆Garden", "じゅえるがーでん"],
+        [63, "シークレットシャノワール", "しーくれっとしゃのわーる"], [64, "Magi", "まぎ"], [65, "MeMeQ", "めめきゅー"], [66, "ParaLulu", "ぱらるる"],
+        [67, "Poppin' Parade", "ぽっぴんぱれーど"], [68, "コングラッチェ！", "こんぐらっちぇ"], [69, "強くてにゅーげーむ", "つよくてにゅーげーむ"], [70, "LIT MOON", "りっとむーん"],
+        [71, "Lv.Charm", "らぶちゃーむ"], [72, "Melty BeaR", "めるてぃーべあ"], [73, "宵越しのアンサンブル", "よいごしのあんさんぶる"], [74, "Pastel Closet", "ぱすてるくろぜっと"],
+        [75, "As a Cutie Pomeranian", "あずあきゅーてぃーぽめらにあん"], [76, "miao", "みゃお"], [77, "オカシリゾート", "おかしりぞーと"], [78, "Bunny La Crew", "ばにーらくりゅー"],
+        [79, "パラディーク", "ぱらでぃーく"], [80, "hakanai", "はかない"], [81, "名称非公開", "めいしょうひこうかい"], [82, "ぜろから☆すた→と", "ぜろからすたーと"],
+        [83, "YumeLia", "ゆめりあ"], [84, "SWANTICK", "すわんてぃっく"], [85, "Lumi Cherie", "るみのしぇり"], [86, "→Taria.", "ねくすたりあ"],
+        [87, "alma", "あるま"], [88, "Lily wonder", "りりーわんだー"], [89, "シャルロット", "しゃるろっと"], [90, "FIRST DREAM", "ふぁーすとどりーむ"],
+        [91, "なろぅ〜でぃんぐ！", "なろうでぃんぐ"], [92, "NeoBiBit", "ねおびびっと"], [93, "チキータ", "ちきーた"], [94, "きゅん死に一生を！？", "きゅんしにいっしょうを"],
+        [95, "セレインノート", "せれいんのーと"], [96, "AIWO", "あいを"], [97, "玉響 storage", "たまゆらすとれーじ"], [98, "まふだっちゅ！", "まふだっちゅ"],
+        [99, "わんふぁす！", "わんふぁす"], [100, "昼夜逆転", "ちゅうやぎゃくてん"], [101, "Pafio", "ぱふぃお"], [102, "きゅ〜くる", "きゅーくる"],
+        [103, "君と青", "きみとあお"], [104, "あくまで天使", "あくまでてんし"], [105, "あいすなっつ", "あいすなっつ"], [106, "EcruRare", "えくらーる"],
+        [107, "INSPIRE", "いんすぱいあ"], [108, "アップアップガールズ（プロレス）", "あっぷあっぷがーるずぷろれす"], [109, "AlSTEAL", "あいすてぃーる"], [110, "Aurora", "おーろら"],
+        [111, "MiiS", "みーず"], [112, "奏音コレクト", "かのんこれくと"], [113, "ミスティア！", "みすてぃあ"], [114, "このアイドルはフィクションです。", "このあいどるはふぃくしょんです"],
+        [115, "イイトコドリ", "いいとこどり"], [116, "＃ジューロック", "じゅーろっく"], [117, "BUNGEE GUM.", "ばんじーがむ"], [118, "はななみ（ex.ベンジャス！）", "はななみ"],
+        [119, "アイオケ", "あいおけ"], [120, "LEVEL7", "れべるせぶん"], [121, "ラビットビット", "らびっとびっと"], [122, "ai*ai", "あいあい"],
+        [123, "SAKURADOLL", "さくらどーる"], [124, "かすみ草とステラ 4期生", "かすみそうとすてらよんきせい"], [125, "GIRLS GIRLS IDOL PROJECT", "がーるずがーるずあいどるぷろじぇくと"], [126, "Lumi→A", "るみあ"],
+        [127, "CURE'T", "きゅあっと"], [128, "しろもん", "しろもん"], [129, "ESTLINK☆", "えすとりんく"], [130, "シオリエル", "しおりえる"],
+        [131, "SEKAIE☆", "せかいえ"], [132, "Shibu3 project", "しぶさんぷろじぇくと"], [133, "美味しい曖昧", "おいしいあいまい"], [134, "ReFLiA", "りふりあ"],
+        [135, "selfish", "せるふぃっしゅ"], [136, "RAViDAVi", "らびだび"], [137, "HIBANA", "ひばな"], [138, "Tohkei", "とうけい"],
+        [139, "花いろは", "はないろは"], [140, "Sweet Alley", "すいーとあれー"], [141, "amini", "あみに"], [142, "シンデレラ宣言！", "しんでれらせんげん"],
+        [143, "君に、胸キュン。", "きみにむねきゅん"], [144, "@onefive", "わんふぁいぶ"], [145, "WHITE SCORPION", "ほわいとすこーぴおん"], [146, "クマリデパート", "くまりでぱーと"],
+        [147, "ジエメイ", "じえめい"], [148, "衛星とカラテア", "えいせいとからてあ"], [149, "FES☆TIVE", "ふぇすてぃぶ"], [150, "泡沫パーティーズ", "うたかたぱーてぃーず"],
+        [151, "ポラリスマイル", "ぽらりすまいる"], [152, "アップアップガールズ（仮）", "あっぷあっぷがーるずかっこかり"], [153, "絶対少女", "ぜったいしょうじょ"], [154, "点染テンセイ少女。", "てんせんてんせいしょうじょ"],
+        [155, "シュレーディンガーの犬", "しゅれーでぃんがーのいぬ"], [156, "VVSiS", "ぶいぶいしす"], [157, "RealRomantic", "りあるろまんてぃっく"], [158, "unFinale Tokyo", "あんふぃなーれとーきょー"],
+        [159, "HzMe", "はずみー"], [160, "アイドル革命", "あいどるかくめい"], [161, "MiX BeRRY", "みっくすべりー"], [162, "スターリットストーリー", "すたーりっとすとーりー"],
+        [163, "Gran☆Ciel", "ぐらんしえる"], [164, "すてねこキャッツ", "すてねこきゃっつ"], [165, "アップアップガールズ（２）", "あっぷあっぷがーるずかっこに"], [166, "CAL&RES", "きゃるあんどれす"],
+        [167, "XINXIN", "しんしん"], [168, "ワンダーウィード 天", "わんだーうぃーどてん"], [169, "HIGH SPIRITS", "はいすぴりっつ"], [170, "JAPANARIZM", "じゃぱなりずむ"],
+        [171, "I MY ME MINE", "あいまいみーまいん"], [172, "Ange☆Reve", "あんじゅれーゔ"], [173, "踊れ！神風", "おどれかみかぜ"], [174, "KissBee", "きすびー"],
+        [175, "SAI²Rium", "さいさいりうむ"], [176, "Y∀KiN", "やきん"], [177, "虹色の飛行少女", "にじいろのひこうしょうじょ"], [178, "おーらびっと", "おーらびっと"],
+        [179, "ファーストプレイリスト", "ふぁーすとぷれいりすと"], [180, "iRiNE", "あいりん"], [181, "Drug&Drop", "どらっぐあんどどろっぷ"], [182, "ラフティア", "らふてぃあ"],
+        [183, "思い出とプレゼント", "おもいでとぷれぜんと"], [184, "Lollipop♡CHU", "ろりぽっぷちゅ"], [185, "LOVEME", "らぶみー"], [186, "LUVRIx", "らぶりっくす"],
+        [187, "ROOKEY♡ROOKEYS", "るーきーるーきーず"], [188, "Miluμ!", "みるみゅー"], [189, "Lily scale", "りりーすけーる"], [190, "NO:VA", "のば"],
+        [191, "New Crown", "にゅーくらうん"], [192, "One Last Bloom", "わんらすとぶるーむ"], [193, "螢", "ほたる"], [194, "PinkySpice", "ぴんきーすぱいす"],
+        [195, "ハレとハレ！", "はれとはれ"], [196, "Star☆T", "すたーと"], [197, "ZUTTOMOTTO", "ずっともっと"], [198, "Honey Devil", "はにーでびる"],
+        [199, "Cherie!", "しぇりー"], [200, "花魁道中", "おいらんどうちゅう"], [201, "幻色シアター", "げんしょくしあたー"], [202, "トウトイナ。", "とうといな"],
+        [203, "鳴ル神", "なるかみ"], [204, "Lilite tune", "りりてちゅーん"], [205, "Aproof", "あぷるーふ"], [206, "Qu♡Aly", "くおりー"],
+        [207, "革命ガールズ", "かくめいがーるず"]
+      ];
+
+      // --- ステージマスタ ---
+      stageMaster = [
+        [0, "MORI MORI STAGE"], [1, "FOREST STAGE"], [2, "LEAF STAGE"], [3, "WIND STAGE"], [4, "LAKE STAGE"], [5, "ADVENTURE STAGE"],
+        ...Array.from({length: 24}, (_, i) => [6 + i, `特典会 ${String.fromCharCode(65+i)}`]),
+        ...Array.from({length: 21}, (_, i) => [30 + i, `縁日 ${i+1}`])
+      ];
+
+      // UI表示用 stage 配列の構築
+      const liveColors = ["orange", "emerald", "lime", "sky", "blue", "purple"];
+      stages = stageMaster.map(st => {
+        const id = st[0], name = st[1];
+        let cat, col;
+        if (id < 6) { cat = 'live'; col = liveColors[id]; }
+        else if (id < 30) { cat = 'tokuten'; col = 'rose'; }
+        else { cat = 'ennichi'; col = 'amber'; }
+        return { id, name, category: cat, color: col, bg: `bg-${col}-50${cat==='ennichi'?'/50':''}`, border: `border-${col}-200`, text: `text-${col}-600`, accent: `bg-${col}-500` };
+      });
+
+      // --- 圧縮文字列から int配列オブジェクトへパース ---
+      const parseActs = (dataObj, prefix) => {
+        let result = [], idx = 0;
+        for (const [stageKey, dataStr] of Object.entries(dataObj)) {
+          if (!dataStr) continue;
+          
+          let targetStageId = 0;
+          if (stageKey === 'mori') targetStageId = 0; else if (stageKey === 'forest') targetStageId = 1; else if (stageKey === 'leaf') targetStageId = 2; else if (stageKey === 'wind') targetStageId = 3; else if (stageKey === 'lake') targetStageId = 4; else if (stageKey === 'adventure') targetStageId = 5;
+          else if (stageKey.startsWith('tk_')) targetStageId = 6 + (stageKey.charCodeAt(3) - 97);
+          else if (stageKey.startsWith('en_')) targetStageId = 29 + parseInt(stageKey.replace('en_', ''));
+          
+          const stageActs = [];
+          dataStr.split('|').forEach(act => {
+            const parts = act.split(',');
+            const em = parseInt(parts.pop());
+            const eh = parseInt(parts.pop());
+            const sm = parseInt(parts.pop());
+            const sh = parseInt(parts.pop());
+            const name = parts.join(','); 
+            
+            const group = artistMaster.find(m => m[1] === name);
+            if (group) {
+              stageActs.push([group[0], sh, sm, eh, em, `${prefix}_${idx++}`]);
+            }
+          });
+          if (stageActs.length > 0) result.push([targetStageId, stageActs]);
+        }
+        return result;
+      };
+
+      const dataDay1 = {
+        mori: "RiNCENT #,10,30,10,55|α＋,10,55,11,20|キングサリ,11,20,11,45|こみっきゅおん！,11,45,12,10|LINKL PLANET,12,10,12,35|かすみ草とステラ,12,45,13,10|MEGAFON,13,10,13,35|手羽先センセーション,13,35,14,00|二丁目の魁カミングアウト,14,00,14,25|アンスリューム,14,25,14,50|THE ORCHESTRA TOKYO,15,00,15,25|Ringwanderung,15,25,15,50|夜光性アミューズ,15,50,16,15|UtaGe!,16,15,16,40|Devil ANTHEM.,16,40,17,05|Merry BAD TUNE.,17,05,17,30|INUWASI,17,40,18,05|NEO JAPONISM,18,05,18,30|Onephony,18,30,18,55|高嶺のなでしこ,18,55,19,20|Rain Tree,19,20,19,45",
+        forest: "君と見るそら,10,00,10,20|Root mimi,10,20,10,40|AZATOY,10,40,11,00|lll,11,00,11,20|マジカル・パンチライン,11,20,11,40|Peel the Apple,11,50,12,10|フルコース,12,10,12,30|びっくえんじぇる,12,30,12,50|UtaGe!,12,50,13,10|NEO JAPONISM,13,10,13,30|Merry BAD TUNE.,13,30,13,50|Devil ANTHEM.,13,50,14,10|INUWASI,14,10,14,30|高嶺のなでしこ,14,30,14,50|selfish,15,00,15,20|myojou,15,20,15,40|ちぃたん☆,15,40,16,00|山崎夢羽,16,00,16,20|かすみ草とステラ,16,20,16,40|まねきケチャ,16,40,17,00|MEGAFON,17,00,17,20|RADiREVi,17,30,17,50|Mirror,Mirror,17,50,18,10|Ringwanderung,18,10,18,30|THE ORCHESTRA TOKYO,18,30,18,50|アンスリューム,18,50,19,10|夜光性アミューズ,19,10,19,30",
+        leaf: "AsteRythm,10,00,10,20|アオハルルートミー,10,20,10,40|スリジエ,10,40,11,00|サクヤコノハナ,11,00,11,20|ルージュブック,11,20,11,40|Fille mimi,11,50,12,10|AQA,12,10,12,30|愛乙女☆DOLL,12,30,12,50|アブソプ,12,50,13,10|KAMAITACI,13,10,13,30|パラレルサイダー,13,40,14,00|metarium,14,00,14,20|あたまのなかは8ビット!?,14,20,14,40|なんキニ！,14,40,15,00|ルルネージュ,15,00,15,20|AQUA PLANET,15,30,15,50|ちゃーむぽっしゅ,15,50,16,10|MyDresscode,16,10,16,30|神様の言う通り,16,30,16,50|SPRISE,16,50,17,10|STARRY NIGHT,17,10,17,30|EDEN,17,40,18,00|SAISON,18,00,18,20|シャニムニ＝パレード,18,20,18,40|すべての瞬間は君だった。,18,40,19,00|メイビー ME,19,00,19,20|DREAMING MONSTER,19,20,19,40",
+        wind: "Jewel☆Garden,10,00,10,15|シークレットシャノワール,10,15,10,30|Magi,10,30,10,45|MeMeQ,10,45,11,00|ParaLulu,11,00,11,15|Poppin' Parade,11,25,11,40|コングラッチェ！,11,40,11,55|強くてにゅーげーむ,11,55,12,10|LIT MOON,12,10,12,25|Lv.Charm,12,25,12,40|Melty BeaR,12,50,13,05|宵越しのアンサンブル,13,05,13,20|Pastel Closet,13,20,13,35|RiNCENT #,13,35,13,50|As a Cutie Pomeranian,13,50,14,05|miao,14,15,14,30|オカシリゾート,14,30,14,45|SAISON,14,45,15,00|Bunny La Crew,15,00,15,15|パラディーク,15,15,15,30|AZATOY,15,40,15,55|Peel the Apple,15,55,16,10|hakanai,16,10,16,25|lll,16,25,16,40|手羽先センセーション,16,40,16,55|二丁目の魁カミングアウト,17,05,17,20|名称非公開,17,20,17,35|ぜろから☆すた→と,17,35,17,50|YumeLia,17,50,18,05|SWANTICK,18,05,18,20|Lumi Cherie,18,30,18,45|→Taria.,18,45,19,00|alma,19,00,19,15|Lily wonder,19,15,19,30|シャルロット,19,30,19,45",
+        lake: "FIRST DREAM,10,00,10,15|なろぅ〜でぃんぐ！,10,15,10,30|NeoBiBit,10,30,10,45|チキータ,10,45,11,00|きゅん死に一生を！？,11,00,11,15|セレインノート,11,25,11,40|AIWO,11,40,11,55|玉響 storage,11,55,12,10|まふだっちゅ！,12,10,12,25|わんふぁす！,12,25,12,40|昼夜逆転,12,50,13,05|Pafio,13,05,13,20|きゅ〜くる,13,20,13,35|君と青,13,35,13,50|あくまで天使,13,50,14,05|あいすなっつ,14,15,14,30|EcruRare,14,30,14,45|INSPIRE,14,45,15,00|アップアップガールズ（プロレス）,15,00,15,15|AlSTEAL,15,15,15,30|Aurora,15,40,15,55|MiiS,15,55,16,10|奏音コレクト,16,10,16,25|ミスティア！,16,25,16,40|このアイドルはフィクションです。,16,40,16,55|イイトコドリ,17,05,17,20|＃ジューロック,17,20,17,35|BUNGEE GUM.,17,35,17,50|はななみ（ex.ベンジャス！）,17,50,18,05|アイオケ,18,05,18,20|LEVEL7,18,30,18,45|ラビットビット,18,45,19,00|metarium,19,00,19,15|hakanai,19,15,19,30|ai*ai,19,30,19,45",
+        adventure: "SAKURADOLL,10,00,10,15|かすみ草とステラ 4期生,10,15,10,30|GIRLS GIRLS IDOL PROJECT,10,30,10,45|Lumi→A,10,45,11,00|CURE'T,11,00,11,15|ぜろから☆すた→と,11,25,11,40|しろもん,11,40,11,55|名称非公開,11,55,12,10|EDEN,12,10,12,25|RADiREVi,12,25,12,40|まねきケチャ,12,50,13,05|ESTLINK☆,13,05,13,20|シオリエル,13,20,13,35|YumeLia,13,35,13,50|メイビー ME,13,50,14,05|α＋,14,15,14,30|Mirror,Mirror,14,30,14,44|こみっきゅおん！,14,45,15,00|SEKAIE☆,15,00,15,15|Root mimi,15,15,15,30|LINKL PLANET,15,40,15,55|キングサリ,15,55,16,10|KAMAITACI,16,10,16,25|フルコース,16,25,16,40|Shibu3 project,16,40,16,55|Pastel Closet,17,05,17,20|びっくえんじぇる,17,20,17,35|Lv.Charm,17,35,17,50|myojou,17,50,18,05|selfish,18,05,18,20|美味しい曖昧,18,30,18,45|山崎夢羽,18,45,19,00|宵越しのアンサンブル,19,00,19,15|パラディーク,19,15,19,30|ReFLiA,19,30,19,45",
+        tk_a: "RiNCENT #,11,15,12,35|LINKL PLANET,12,55,14,15|二丁目の魁カミングアウト,14,45,16,05|INUWASI,18,25,19,45|Onephony,20,00,21,20",
+        tk_b: "α＋,11,40,13,00|かすみ草とステラ,13,30,14,50|アンスリューム,15,10,16,30|UtaGe!,17,00,18,20|NEO JAPONISM,18,50,20,10|高嶺のなでしこ,20,00,21,20",
+        tk_c: "キングサリ,12,05,13,25|MEGAFON,13,55,15,15|THE ORCHESTRA TOKYO,15,45,17,05|Devil ANTHEM.,17,50,19,10|Rain Tree,20,00,21,20",
+        tk_d: "こみっきゅおん！,12,30,13,50|手羽先センセーション,14,20,15,40|Ringwanderung,16,10,17,30|THE ORCHESTRA TOKYO,19,50,21,10",
+        tk_e: "君と見るそら,10,40,12,00|マジカル・パンチライン,12,00,13,20|UtaGe!,13,30,14,50|INUWASI,14,50,16,10|ちぃたん☆,16,20,17,40|MEGAFON,17,40,19,00|アンスリューム,19,50,21,10",
+        tk_f: "Root mimi,11,00,12,20|Peel the Apple,12,30,13,50|NEO JAPONISM,13,50,15,10|高嶺のなでしこ,15,10,16,30|山崎夢羽,16,40,18,00|RADiREVi,18,10,19,30|夜光性アミューズ,19,50,21,10",
+        tk_g: "AZATOY,11,20,12,40|フルコース,12,50,14,10|Merry BAD TUNE.,14,10,15,30|selfish,15,40,17,00|かすみ草とステラ,17,00,18,20|Mirror,Mirror,18,30,19,50|すべての瞬間は君だった。,20,00,21,20",
+        tk_h: "lll,11,40,13,00|びっくえんじぇる,13,10,14,30|Devil ANTHEM.,14,30,15,50|myojou,16,00,17,20|まねきケチャ,17,20,18,40|Ringwanderung,18,50,20,10|メイビー ME,20,00,21,20",
+        tk_i: "AsteRythm,10,40,11,50|ルージュブック,12,00,13,10|アブソプ,13,30,14,40|あたまのなかは8ビット!?,15,00,16,10|ちゃーむぽっしゅ,16,30,17,40|STARRY NIGHT,17,50,19,00|DREAMING MONSTER,20,00,21,20",
+        tk_j: "アオハルルートミー,11,00,12,10|Fille mimi,12,30,13,40|KAMAITACI,13,50,15,00|なんキニ！,15,20,16,30|MyDresscode,16,50,18,00|EDEN,18,20,19,30|alma,20,00,21,00",
+        tk_k: "スリジエ,11,20,12,30|AQA,12,50,14,00|パラレルサイダー,14,20,15,30|ルルネージュ,15,40,16,50|神様の言う通り,17,10,18,20|SAISON,18,40,19,50|Lily wonder,20,00,21,00",
+        tk_l: "サクヤコノハナ,11,40,12,50|愛乙女☆DOLL,13,10,14,20|metarium,14,40,15,50|AQUA PLANET,16,10,17,20|SPRISE,17,30,18,40|シャニムニ＝パレード,19,00,20,10|シャルロット,20,00,21,00",
+        tk_m: "Jewel☆Garden,10,35,11,35|ParaLulu,11,35,12,35|LIT MOON,12,45,13,45|Pastel Closet,13,55,14,55|オカシリゾート,15,05,16,05|AZATOY,16,15,17,15|手羽先センセーション,17,15,18,15|YumeLia,18,25,19,25|metarium,20,00,21,00",
+        tk_n: "シークレットシャノワール,10,50,11,50|Poppin' Parade,12,00,13,00|Lv.Charm,13,00,14,00|RiNCENT #,14,10,15,10|SAISON,15,20,16,20|Peel the Apple,16,30,17,30|二丁目の魁カミングアウト,17,40,18,40|SWANTICK,18,40,19,40|hakanai,20,00,21,00",
+        tk_o: "Magi,11,05,12,05|コングラッチェ！,12,15,13,15|Melty BeaR,13,25,14,25|As a Cutie Pomeranian,14,25,15,25|Bunny La Crew,15,35,16,35|hakanai,16,45,17,45|名称非公開,17,55,18,55|Lumi Cherie,19,05,20,05|ai*ai,20,00,21,00",
+        tk_p: "MeMeQ,11,20,12,20|強くてにゅーげーむ,12,30,13,30|宵越しのアンサンブル,13,40,14,40|miao,14,50,15,50|パラディーク,15,50,16,50|lll,17,00,18,00|ぜろから☆すた→と,18,10,19,10|→Taria.,19,20,20,20|宵越しのアンサンブル,20,00,21,00",
+        tk_q: "FIRST DREAM,10,35,11,35|きゅん死に一生を！？,11,35,12,35|まふだっちゅ！,12,45,13,45|きゅ〜くる,13,55,14,55|EcruRare,15,05,16,05|Aurora,16,15,17,15|このアイドルはフィクションです。,17,15,18,15|はななみ（ex.ベンジャス！）,18,25,19,25|パラディーク,20,00,21,00",
+        tk_r: "なろぅ〜でぃんぐ！,10,50,11,50|セレインノート,12,00,13,00|わんふぁす！,13,00,14,00|君と青,14,10,15,10|INSPIRE,15,20,16,20|MiiS,16,30,17,30|イイトコドリ,17,40,18,40|アイオケ,18,40,19,40|ReFLiA,20,00,21,00",
+        tk_s: "NeoBiBit,11,05,12,05|AIWO,12,15,13,15|昼夜逆転,13,25,14,25|あくまで天使,14,25,15,25|アップアップガールズ（プロレス）,15,35,16,35|奏音コレクト,16,45,17,45|＃ジューロック,17,55,18,55|LEVEL7,19,05,20,05",
+        tk_t: "チキータ,11,20,12,20|玉響 storage,12,30,13,30|Pafio,13,40,14,40|あいすなっつ,14,50,15,50|AlSTEAL,15,50,16,50|ミスティア！,17,00,18,00|BUNGEE GUM.,18,10,19,10|ラビットビット,19,20,20,20",
+        tk_u: "SAKURADOLL,10,35,11,35|CURE'T,11,35,12,35|EDEN,12,45,13,45|シオリエル,13,55,14,55|Mirror,Mirror,15,05,16,05|LINKL PLANET,16,15,17,15|Shibu3 project,17,15,18,15|myojou,18,25,19,25",
+        tk_v: "かすみ草とステラ 4期生,10,50,11,50|ぜろから☆すた→と,12,00,13,00|RADiREVi,13,00,14,00|YumeLia,14,10,15,10|こみっきゅおん！,15,20,16,20|キングサリ,16,30,17,30|Pastel Closet,17,40,18,40|selfish,18,40,19,40",
+        tk_w: "GIRLS GIRLS IDOL PROJECT,11,05,12,05|しろもん,12,15,13,15|まねきケチャ,13,25,14,25|メイビー ME,14,25,15,25|SEKAIE☆,15,35,16,35|KAMAITACI,16,45,17,45|びっくえんじぇる,17,55,18,55|美味しい曖昧,18,40,19,40|山崎夢羽,19,05,20,05",
+        tk_x: "Lumi→A,11,20,12,20|名称非公開,12,30,13,30|ESTLINK☆,13,40,14,40|α＋,14,50,15,50|Root mimi,15,50,16,50|フルコース,17,00,18,00|Lv.Charm,18,10,19,10|ReFLiA,19,20,20,20",
+        en_1: "しろもん,10,10,11,10|FIRST DREAM,11,55,12,55|Lumi→A,13,00,14,00|キングサリ,14,05,15,05|As a Cutie Pomeranian,15,45,16,45|Bunny La Crew,16,55,17,55|アイオケ,20,00,21,00",
+        en_2: "EDEN,10,50,11,50|アンスリューム,12,55,13,55|LIT MOON,14,05,15,05|Pastel Closet,15,15,16,15|オカシリゾート,16,25,17,25|alma,17,30,18,30|このアイドルはフィクションです。,18,35,19,35|Merry BAD TUNE.,19,40,20,40",
+        en_3: "なろぅ〜でぃんぐ！,12,10,13,10|Melty BeaR,14,45,15,45|あくまで天使,15,50,16,50|Lumi Cherie,17,00,18,00|奏音コレクト,18,05,19,05|＃ジューロック,19,15,20,15",
+        en_4: "MeMeQ,12,40,13,40|Ringwanderung,13,55,14,55|宵越しのアンサンブル,15,00,16,00|あいすなっつ,16,10,17,10|シャルロット,18,00,19,00|myojou,19,45,20,45",
+        en_5: "ParaLulu,12,55,13,55|RiNCENT #,15,30,16,30|SAISON,16,40,17,40|Lily wonder,17,45,18,45",
+        en_6: "君と見るそら,12,20,13,20|マジカル・パンチライン,13,30,14,00|miao,16,10,17,10|→Taria.,17,15,18,15|かすみ草とステラ,18,40,19,40|selfish,20,00,21,00",
+        en_7: "山崎夢羽,14,10,15,10|Root mimi,12,40,13,40|Peel the Apple,14,10,15,10|きゅ〜くる,15,15,16,15|EcruRare,16,25,17,25|Aurora,17,35,18,35",
+        en_8: "INUWASI,12,40,13,40|ぜろから☆すた→と,13,45,14,45|イイトコドリ,14,50,15,50|アップアップガールズ（プロレス）,17,00,18,00|ちぃたん☆,18,10,19,10",
+        en_9: "AZATOY,13,00,14,00|まふだっちゅ！,14,05,15,05|びっくえんじぇる,15,10,16,10|すべての瞬間は君だった。,17,10,18,10|手羽先センセーション,18,35,19,35|はななみ（ex.ベンジャス！）,19,45,20,45",
+        en_10: "シークレットシャノワール,12,10,13,10|Lv.Charm,14,25,15,25|シャニムニ＝パレード,16,50,17,50|DREAMING MONSTER,18,00,19,00|BUNGEE GUM.,19,30,20,30",
+        en_11: "AsteRythm,12,10,13,10|ルージュブック,13,30,14,30|アブソプ,15,00,16,00|なんキニ！,16,50,17,50|MyDresscode,18,20,19,20",
+        en_12: "アオハルルートミー,12,30,13,30|Fille mimi,14,00,15,00|ルルネージュ,17,10,18,10|神様の言う通り,18,40,19,40",
+        en_13: "スリジエ,12,50,13,50|AQA,14,20,15,20|metarium,16,10,17,10|AQUA PLANET,17,40,18,40|SPRISE,19,00,20,00",
+        en_14: "Jewel☆Garden,11,55,12,55|サクヤコノハナ,13,10,14,10|愛乙女☆DOLL,14,40,15,40|あたまのなかは8ビット!?,16,30,17,30|ちゃーむぽっしゅ,18,00,19,00|STARRY NIGHT,19,20,20,20",
+        en_15: "Magi,12,25,13,25|コングラッチェ！,13,35,14,35|hakanai,14,40,15,40|YumeLia,15,45,16,45|AlSTEAL,17,10,18,10|ミスティア！,18,20,19,20|SWANTICK,20,00,21,00",
+        en_16: "かすみ草とステラ 4期生,12,10,13,10|Poppin' Parade,13,20,14,20|昼夜逆転,14,45,15,45|メイビー ME,16,00,17,00|MiiS,17,50,18,50|Pastel Closet,19,00,20,00",
+        en_17: "NeoBiBit,12,25,13,25|強くてにゅーげーむ,13,50,14,50|Pafio,15,00,16,00|LEVEL7,16,50,17,50|ReFLiA,18,00,19,00",
+        en_18: "チキータ,12,40,13,40|AIWO,13,45,14,45|まねきケチャ,14,50,15,50|美味しい曖昧,16,00,17,00|ラビットビット,17,15,18,15|Shibu3 project,18,35,19,35",
+        en_19: "きゅん死に一生を！？,12,55,13,55|玉響 storage,14,00,15,00|ESTLINK☆,15,05,16,05|Mirror,Mirror,16,25,17,25|LINKL PLANET,17,35,18,35",
+        en_20: "GIRLS GIRLS IDOL PROJECT,12,10,13,10|セレインノート,13,15,14,15|わんふぁす！,14,20,15,20|君と青,15,30,16,30|INSPIRE,16,40,17,40|ai*ai,18,00,19,00",
+        en_21: "CURE'T,12,55,13,55|名称非公開,14,00,15,00|シオリエル,15,15,16,15|SEKAIE☆,16,55,17,55|KAMAITACI,18,05,19,05"
+      };
+
+      const dataDay2 = {
+        mori: "君と見るそら,10,00,10,25|RAViDAVi,10,25,10,50|HIBANA,10,50,11,15|Tohkei,11,15,11,40|花いろは,11,40,12,05|びっくえんじぇる,12,15,12,40|Sweet Alley,12,40,13,05|amini,13,05,13,30|シンデレラ宣言！,13,30,13,55|君に、胸キュン。,13,55,14,20|@onefive,14,30,14,55|かすみ草とステラ,14,55,15,20|Mirror,Mirror,15,20,15,45|WHITE SCORPION,15,45,16,10|THE ORCHESTRA TOKYO,16,10,16,35|手羽先センセーション,16,45,17,10|二丁目の魁カミングアウト,17,10,17,35|クマリデパート,17,35,18,00|ジエメイ,18,00,18,25|衛星とカラテア,18,25,18,50|FES☆TIVE,18,50,19,15|UtaGe!,19,15,19,40",
+        forest: "泡沫パーティーズ,10,00,10,20|ポラリスマイル,10,20,10,40|ちゃーむぽっしゅ,10,40,11,00|アップアップガールズ（仮）,11,00,11,20|SAISON,11,20,11,40|SEKAIE☆,11,50,12,10|絶対少女,12,10,12,30|点染テンセイ少女。,12,30,12,50|なんキニ！,12,50,13,10|myojou,13,10,13,30|シュレーディンガーの犬,13,40,14,00|metarium,14,00,14,20|パラディーク,14,20,14,40|FES☆TIVE,14,40,15,00|衛星とカラテア,15,00,15,20|VVSiS,15,30,15,50|RAViDAVi,15,50,16,10|ルルネージュ,16,10,16,30|RealRomantic,16,30,16,50|unFinale Tokyo,16,50,17,10|RiNCENT #,17,20,17,40|君に、胸キュン。,17,40,18,00|LINKL PLANET,18,00,18,20|HzMe,18,20,18,40|Mirror,Mirror,18,40,19,00|かすみ草とステラ,19,00,19,20|ジエメイ,19,20,19,40",
+        leaf: "アイドル革命,10,00,10,20|MiX BeRRY,10,20,10,40|スターリットストーリー,10,40,11,00|Shibu3 project,11,00,11,20|Gran☆Ciel,11,20,11,40|すてねこキャッツ,11,50,12,10|神様の言う通り,12,10,12,30|SPRISE,12,30,12,50|はななみ（ex.ベンジャス！）,12,50,13,10|アップアップガールズ（２）,13,10,13,30|AQUA PLANET,13,40,14,00|As a Cutie Pomeranian,14,00,14,20|miao,14,20,14,40|CAL&RES,14,40,15,00|XINXIN,15,00,15,20|パラレルサイダー,15,30,15,50|ワンダーウィード 天,15,50,16,10|HIGH SPIRITS,16,10,16,30|かすみ草とステラ 4期生,16,30,16,50|FULIT BOX,16,50,17,10|JAPANARIZM,17,10,17,30|ZUTTOMOTTO,17,40,18,00|I MY ME MINE,18,00,18,20|Ange☆Reve,18,20,18,40|踊れ！神風,18,40,19,00|KissBee,19,00,19,20|SAI²Rium,19,20,19,40",
+        wind: "Aurora,10,00,10,15|セレインノート,10,15,10,30|Magi,10,30,10,45|パラレルサイダー,10,45,11,00|Y∀KiN,11,00,11,15|AIWO,11,25,11,40|虹色の飛行少女,11,40,11,55|AQA,11,55,12,10|FULIT BOX,12,10,12,25|わんふぁす！,12,25,12,40|GIRLS GIRLS IDOL PROJECT,12,50,13,05|おーらびっと,13,05,13,20|STARRY×NIGHT↗,13,20,13,35|ファーストプレイリスト,13,35,13,50|ぜろから☆すた→と,13,50,14,05|iRiNE,14,15,14,30|EcruRare,14,30,14,45|Drug&Drop,14,45,15,00|ちゃーむぽっしゅ,15,00,15,15|ParaLulu,15,15,15,30|SEKAIE☆,15,40,15,55|Melty BeaR,15,55,16,10|花いろは,16,10,16,25|すてねこキャッツ,16,25,16,40|なんキニ！,16,40,16,55|まぶだちゅ！,17,05,17,20|ラフティア,17,20,17,35|オカシリゾート,17,35,17,50|思い出とプレゼント,17,50,18,05|Lollipop♡CHU,18,05,18,20|LOVEME,18,30,18,45|LUVRIx,18,45,19,00|ROOKEY♡ROOKEYS,19,00,19,15|Miluμ!,19,15,19,30|Lily scale,19,30,19,45",
+        lake: "なうろ〜でぃんぐ！,10,00,10,15|NeoBiBit,10,15,10,30|FIRST DREAM,10,30,10,45|Lumi→A,10,45,11,00|ラビットビット,11,00,11,15|@youuuuu!!!,11,25,11,40|NO:VA,11,40,11,55|New Crown,11,55,12,10|玉響 storage,12,10,12,25|あいすなっつ,12,25,12,40|One Last Bloom,12,50,13,05|螢,13,05,13,20|アオハルルートミー,13,20,13,35|ESTLINK☆,13,35,13,50|AsteRythm,13,50,14,05|PinkySpice,14,15,14,30|ハレとハレ！,14,30,14,45|ポンコツコンポ,14,45,15,00|Star☆T,15,00,15,15|ZUTTOMOTTO,15,15,15,30|Shibu3 project,15,40,15,55|Honey Devil,15,55,16,10|Cherie!,16,10,16,25|虹色の飛行少女,16,25,16,40|花魁道中,16,40,16,55|幻色シアター,17,05,17,20|XINXIN,17,20,17,35|MiiS,17,35,17,50|STARRY×NIGHT↗,17,50,18,05|トウトイナ。,18,05,18,20|鳴ル神,18,30,18,45|VVSiS,18,45,19,00|YumeLia,19,00,19,15|点染テンセイ少女。,19,15,19,30|Lilite tune,19,30,19,45",
+        adventure: "Aproof,10,00,10,15|Qu♡Aly,10,15,10,30|革命ガールズ,10,30,10,45|BUNGEE GUM.,10,45,11,00|アワソワ,11,00,11,15|HIGH SPIRITS,11,25,11,40|Melty BeaR,11,40,11,55|ポンコツコンポ,11,55,12,10|WHITE SCORPION,12,10,12,25|THE ORCHESTRA TOKYO,12,25,12,40|UtaGe!,12,50,13,05|手羽先センセーション,13,05,13,20|二丁目の魁カミングアウト,13,20,13,35|ルルネージュ,13,35,13,50|unFinale Tokyo,13,50,14,05|RiNCENT #,14,15,14,30|LINKL PLANET,14,30,14,45|びっくえんじぇる,14,45,15,00|Tohkei,15,00,15,15|HIBANA,15,15,15,30|HzMe,15,40,15,55|ちぃたん☆,15,55,16,10|君と見るそら,16,10,16,25|amini,16,25,16,40|SAISON,16,40,16,55|SAI²Rium,17,05,17,20|Sweet Alley,17,20,17,35|シンデレラ宣言！,17,35,17,50|ぜろから☆すた→と,17,50,18,05|シュレーディンガーの犬,18,05,18,20|myojou,18,30,18,45|@onefive,18,45,19,00|ParaLulu,19,00,19,15|metarium,19,15,19,30|ワンダーウィード 天,19,30,19,45",
+        tk_a: "君と見るそら,10,45,12,05|花いろは,12,25,13,45|シンデレラ宣言！,14,15,15,35|Mirror,Mirror,16,05,17,25|二丁目の魁カミングアウト,17,55,19,15|衛星とカラテア,20,00,21,20|FES☆TIVE,20,00,21,20|UtaGe!,20,00,21,20|かすみ草とステラ,20,00,21,20|ジエメイ,20,00,21,20|踊れ！神風,20,00,21,20|KissBee,20,00,21,20|SAI²Rium,20,00,21,20",
+        tk_b: "RAViDAVi,11,10,12,30|びっくえんじぇる,13,00,14,20|君に、胸キュン。,14,40,16,00|WHITE SCORPION,16,30,17,50|クマリデパート,18,20,19,40|ROOKEY♡ROOKEYS,20,00,21,00|Miluμ!,20,00,21,00|Lily scale,20,00,21,00|YumeLia,20,00,21,00|点染テンセイ少女。,20,00,21,00|Lilite tune,20,00,21,00|ParaLulu,20,00,21,00|metarium,20,00,21,00|ワンダーウィード 天,20,00,21,00",
+        tk_c: "HIBANA,11,35,12,55|Sweet Alley,13,25,14,45|@onefive,15,15,16,35|THE ORCHESTRA TOKYO,16,55,18,15",
+        tk_d: "Tohkei,12,00,13,20|amini,13,50,15,10|かすみ草とステラ,15,40,17,00|手羽先センセーション,17,30,18,50",
+        tk_e: "泡沫パーティーズ,10,40,12,00|SAISON,12,00,13,20|なんキニ！,13,30,14,50|パラディーク,15,00,16,20|RAViDAVi,16,30,17,50|RiNCENT #,18,00,19,20",
+        tk_f: "ポラリスマイル,11,00,12,20|SEKAIE☆,12,30,13,50|myojou,13,50,15,10|FES☆TIVE,15,20,16,40|ルルネージュ,16,50,18,10|君に、胸キュン。,18,20,19,40",
+        tk_g: "ちゃーむぽっしゅ,11,10,12,40|絶対少女,12,50,14,10|シュレーディンガーの犬,14,20,15,40|衛星とカラテア,15,40,17,00|RealRomantic,17,10,18,30|LINKL PLANET,18,40,20,00",
+        tk_h: "アップアップガールズ（仮）,11,40,13,00|点染テンセイ少女。,13,10,14,30|metarium,14,40,16,00|VVSiS,16,10,17,30|unFinale Tokyo,17,30,18,50|HzMe,19,00,20,20",
+        tk_i: "アイドル革命,10,40,11,50|Gran☆Ciel,12,00,13,10|はななみ（ex.ベンジャス！）,13,30,14,40|miao,15,00,16,10|ワンダーウィード 天,16,30,17,40|JAPANARIZM,17,50,19,00",
+        tk_j: "MiX BeRRY,11,00,12,10|すてねこキャッツ,12,30,13,40|アップアップガールズ（２）,13,50,15,00|CAL&RES,15,20,16,30|HIGH SPIRITS,16,50,18,00|ZUTTOMOTTO,18,20,19,30",
+        tk_k: "スターリットストーリー,11,20,12,30|神様の言う通り,12,50,14,00|AQUA PLANET,14,20,15,30|XINXIN,15,40,16,50|かすみ草とステラ 4期生,17,10,18,20|I MY ME MINE,18,40,19,50",
+        tk_l: "Shibu3 project,11,40,12,50|SPRISE,13,10,14,20|As a Cutie Pomeranian,14,40,15,50|パラレルサイダー,16,10,17,20|FULIT BOX,17,30,18,40|Ange☆Reve,19,00,20,10",
+        tk_m: "Aurora,10,35,11,35|Y∀KiN,11,35,12,35|FULIT BOX,12,45,13,45|STARRY×NIGHT↗,13,55,14,55|EcruRare,15,05,16,05|SEKAIE☆,16,15,17,15|なんキニ！,17,15,18,15|思い出とプレゼント,18,25,19,25",
+        tk_n: "セレインノート,10,50,11,50|AIWO,12,00,13,00|わんふぁす！,13,00,14,00|ファーストプレイリスト,14,10,15,10|Drug&Drop,15,20,16,20|Melty BeaR,16,30,17,30|まぶだちゅ！,17,40,18,40|Lollipop♡CHU,18,40,19,40",
+        tk_o: "Magi,11,05,12,05|虹色の飛行少女,12,15,13,15|GIRLS GIRLS IDOL PROJECT,13,25,14,25|ぜろから☆すた→と,14,25,15,25|ちゃーむぽっしゅ,15,35,16,35|花いろは,16,45,17,45|ラフティア,17,55,18,55|LOVEME,19,05,20,05",
+        tk_p: "パラレルサイダー,11,20,12,20|AQA,12,30,13,30|おーらびっと,13,40,14,40|iRiNE,14,50,15,50|ParaLulu,15,50,16,50|すてねこキャッツ,17,00,18,00|オカシリゾート,18,10,19,10|LUVRIx,19,20,20,20",
+        tk_q: "なうろ〜でぃんぐ！,10,35,11,35|ラビットビット,11,35,12,35|玉響 storage,12,45,13,45|アオハルルートミー,13,55,14,55|ハレとハレ！,15,05,16,05|Shibu3 project,16,15,17,15|花魁道中,17,15,18,15|STARRY×NIGHT↗,18,25,19,25",
+        tk_r: "NeoBiBit,10,50,11,50|@youuuuu!!!,12,00,13,00|あいすなっつ,13,00,14,00|ESTLINK☆,14,10,15,10|ポンコツコンポ,15,20,16,20|Honey Devil,16,30,17,30|幻色シアター,17,40,18,40|トウトイナ。,18,40,19,40",
+        tk_s: "FIRST DREAM,11,05,12,05|NO:VA,12,15,13,15|One Last Bloom,13,25,14,25|AsteRythm,14,25,15,25|Star☆T,15,35,16,35|Cherie!,16,45,17,45|XINXIN,17,55,18,55|鳴ル神,19,05,20,05",
+        tk_t: "Lumi→A,11,20,12,20|New Crown,12,30,13,30|螢,13,40,14,40|PinkySpice,14,50,15,50|ZUTTOMOTTO,15,50,16,50|虹色の飛行少女,17,00,18,00|MiiS,18,10,19,10|VVSiS,19,20,20,20",
+        tk_u: "SAKURADOLL,10,35,11,35|アワソワ,11,35,12,35|WHITE SCORPION,12,45,13,45|二丁目の魁カミングアウト,13,55,14,55|LINKL PLANET,15,05,16,05|HzMe,16,15,17,15|SAISON,17,15,18,15|ぜろから☆すた→と,18,25,19,25",
+        tk_v: "Qu♡Aly,10,50,11,50|HIGH SPIRITS,12,00,13,00|THE ORCHESTRA TOKYO,13,00,14,00|ルルネージュ,14,10,15,10|ひっくえんじぇる,15,20,16,20|ちぃたん☆,16,30,17,30|SAI²Rium,17,40,18,40|シュレーディンガーの犬,18,40,19,40",
+        tk_w: "革命ガールズ,11,05,12,05|Melty BeaR,12,15,13,15|UtaGe!,13,25,14,25|unFinale Tokyo,14,25,15,15|RiNCENT #,14,50,15,50|HIBANA,15,50,16,35|君と見るそら,16,45,17,45|Sweet Alley,17,55,18,55|myojou,19,00,20,00",
+        tk_x: "BUNGEE GUM.,11,20,12,20|ポンコツコンポ,12,30,13,30|手羽先センセーション,13,40,14,40|RiNCENT #,14,50,15,50|HIBANA,15,50,16,35|amini,17,00,18,00|シンデレラ宣言！,18,10,19,10|@onefive,19,20,20,20",
+        en_1: "君と見るそら,12,25,13,25|Mirror,Mirror,13,50,14,50|RealRomantic,15,00,16,00|LINKL PLANET,16,25,17,25|かすみ草とステラ,17,30,18,30|花魁道中,18,35,19,35|思い出とプレゼント,19,45,20,45",
+        en_2: "Aproof,11,55,12,55|RAViDAVi,13,00,14,00|花いろは,14,05,15,05|アップアップガールズ（２）,15,20,16,20|I MY ME MINE,16,30,17,30|Lilite tune,18,00,19,00|クマリデパート,20,00,21,00",
+        en_3: "アイドル革命,12,10,13,10|HIBANA,13,15,14,15|Tohkei,13,40,14,40|GIRLS GIRLS IDOL PROJECT,14,45,15,45|シンデレラ宣言！,15,55,16,55|点染テンセイ少女。,17,00,18,00|WHITE SCORPION,18,10,19,10|幻色シアター,18,55,19,55|Lollipop♡CHU,20,00,21,00",
+        en_4: "MiX BeRRY,12,30,13,30|AQA,13,50,14,50|myojou,15,30,16,30|ワンダーウィード 天,18,00,19,00|XINXIN,19,15,20,15|unFinale Tokyo,19,10,20,10",
+        en_5: "泡沫パーティーズ,12,20,13,20|ポラリスマイル,12,40,13,40|SEKAIE☆,14,10,15,10|シュレーディンガーの犬,16,00,17,00|踊れ！神風,17,10,18,10|HIGH SPIRITS,18,20,19,20|RiNCENT #,19,40,20,40",
+        en_6: "Aurora,11,55,12,55|ちゃーむぽっしゅ,13,00,14,00|HzMe,14,10,15,10|metarium,16,20,17,20|KissBee,17,30,18,30|MiiS,19,30,20,30",
+        en_7: "セレインノート,12,10,13,10|アップアップガールズ（仮）,13,20,14,20|絶対少女,14,30,15,30|ぜろから☆すた→と,15,45,16,45|Ange☆Reve,16,50,17,50|ルルネージュ,18,30,19,30",
+        en_8: "なうろ〜でぃんぐ！,11,55,12,55|スターリットストーリー,12,50,13,50|はななみ（ex.ベンジャス！）,15,00,16,00|As a Cutie Pomeranian,16,10,17,10|Lily scale,18,00,19,00|JAPANARIZM,19,20,20,20|トウトイナ。,20,00,21,00",
+        en_9: "Magi,12,25,13,25|衛星とカラテア,13,30,14,30|なんキニ！,15,10,16,10|miao,16,30,17,30|Miluμ!,17,35,18,35|かすみ草とステラ 4期生,18,40,19,40",
+        en_10: "Shibu3 project,13,10,14,10|神様の言う通り,14,20,15,20|ファーストプレイリスト,15,30,16,30|Drug&Drop,16,40,17,40|Melty BeaR,17,50,18,50|まぶだちゅ！,19,00,20,00",
+        en_11: "Qu♡Aly,12,10,13,10|Gran☆Ciel,13,30,14,30|SPRISE,14,40,15,40|AQUA PLANET,15,50,16,50|ParaLulu,17,10,18,10",
+        en_12: "Y∀KiN,12,55,13,55|FULIT BOX,14,05,15,05|STARRY×NIGHT↗,15,15,16,15|iRiNE,16,10,17,10|LUVRIx,17,15,18,15|ROOKEY♡ROOKEYS,17,30,18,30|SAISON,18,40,19,40|ラフティア,19,15,20,15",
+        en_13: "NeoBiBit,12,10,13,10|AIWO,13,20,14,20|おーらびっと,15,00,16,00|EcruRare,16,25,17,25|LOVEME,17,00,18,00|オカシリゾート,19,30,20,30|君に、胸キュン。,20,00,21,00",
+        en_14: "FIRST DREAM,12,25,13,25|虹色の飛行少女,13,35,14,35|UtaGe!,14,45,15,45|鳴ル神,17,00,18,00",
+        en_15: "Lumi→A,12,40,13,40|New Crown,13,50,14,50|螢,15,00,16,00|PinkySpice,16,10,17,10|YumeLia,17,30,18,30|SAI²Rium,19,00,20,00",
+        en_16: "ラビットビット,12,55,13,55|玉響 storage,14,00,15,00|アオハルルートミー,15,15,16,15|ハレとハレ！,16,25,17,25|手羽先センセーション,19,20,20,20",
+        en_17: "@youuuuu!!!,13,20,14,20|ESTLINK☆,15,30,16,30|Honey Devil,17,50,18,50",
+        en_18: "NO:VA,13,35,14,35|あいすなっつ,14,45,15,45|AsteRythm,15,50,16,50|Cherie!,17,50,18,50",
+        en_19: "革命ガールズ,12,25,13,25|One Last Bloom,14,45,15,45|SAI²Rium,15,30,16,30|Star☆T,16,55,17,55|ちぃたん☆,17,50,18,50",
+        en_20: "BUNGEE GUM.,12,40,13,40|アワソワ,13,45,14,45|ひっくえんじぇる,16,40,17,40"
+      };
+
+      scheduleDay1 = parseActs(dataDay1, "d1");
+      scheduleDay2 = parseActs(dataDay2, "d2");
+    }
+  </script>
+</body>
+</html>
